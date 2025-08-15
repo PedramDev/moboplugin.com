@@ -1,0 +1,90 @@
+# Wordpress - ignore core, configuration, examples, uploads and logs.
+# https://github.com/github/gitignore/blob/main/WordPress.gitignore
+
+# Core
+#
+# Note: if you want to stage/commit WP core files
+# you can delete this whole section/until Configuration.
+/wp-admin/
+/wp-content/index.php
+/wp-content/cache/
+/wp-content/languages
+/wp-content/plugins/index.php
+/wp-content/themes
+/wp-includes/
+/wp-includes/*
+/index.php
+/license.txt
+/readme.html
+/wp-*.php
+/xmlrpc.php
+
+# Configuration
+wp-config.php
+
+# Example themes
+/wp-content/themes/hello-elementor/
+
+# Example plugin
+/wp-content/plugins/easy-table-of-contents
+
+# Uploads
+/wp-content/uploads/
+
+# Log files
+*.log
+
+# All plugins
+#
+# Note: If you wish to whitelist plugins,
+# uncomment the next line
+bk
+/wp-content/plugins/akismet
+wp-content/plugins/classic*
+wp-content/plugins/wp-*
+wp-content/plugins/persian*
+/wp-content/plugins/woocommerce
+wp-content/plugins/index.php
+# All themes
+#
+# Note: If you wish to whitelist themes,
+# uncomment the next line
+/wp-content/upgrade
+/wp-content/plugins/eleme*
+/wp-content/plugins/air*
+/wp-content/plugins/super*
+.idea
+/wp-content/plugins/^decor
+/wp-content/plugins/updraft*
+/wp-content/updraft
+/wp-content/plugins/super*
+/wp-content/plugins/search*
+/wp-content/plugins/*.zip
+/wp-content/plugins/*.rar
+/wp-content/w3tc-config
+/wp-content/.*\.php-old
+/wp-content/.litespeed_*
+index.php-old
+/wp-content/litespeed/*
+/wp-content/mu-plugins/*
+/wp-content/plugins/wordpress-seo
+/wp-content/plugins/wp-table-builder
+/wp-content/plugins/easy-wp-smtp
+/wp-content/plugins/newsletter
+/wp-content/plugins/kk-*
+/wp-content/plugins/ewww-image-optimizer
+/wp-content/plugins/force-regenerate-thumbnails
+/wp-content/plugins/hostinger
+/wp-content/plugins/litespeed-cache
+/wp-content/plugins/paste-as-plain-text-by-default
+/wp-content/plugins/microsoft-clarity
+/wp-content/plugins/google-site-kit
+/wp-content/plugins/crisp
+/wp-content/plugins/better*
+/wp-content/plugins/wordpress*
+/wp-content/plugins/yet-another-related-posts-plugin
+/wp-content/logs
+.htaccess
+.htaccess.bk
+robots.txt
+php.ini
