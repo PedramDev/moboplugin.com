@@ -3,9 +3,9 @@ namespace MoboCore;
 
 class WooCommerceProductManager {
 
-    private function getCategoryIds($categories) {
+    private function getCategoryUrls($categories) {
         $ids = array_map(function($category) {
-            return $category['id'];
+            return $category['url'];
         }, $categories);
         
         return $ids;
@@ -16,36 +16,37 @@ class WooCommerceProductManager {
      * @param array $meta_value_array Array of ThirdPartyIds
      * @return array|null Array of WordPress category IDs or null if none found
      */
-    public function get_all_product_categories($meta_value_array)
+    private function get_all_product_categories($slugs)
     {
-        if (empty($meta_value_array)) {
-            return null; // Return null if the input array is empty
+        if (!is_array($slugs)) {
+            return null; // or handle the error as needed
         }
 
+        $formatted_slugs = array_map(function($slug) {
+            return basename($slug); // Get the last part of the slug
+        }, $slugs);
+
         $args = array(
-            'taxonomy' => 'product_cat',
-            'meta_query' => array(
-                array(
-                    'key'     => 'guid',
-                    'value'   => $meta_value_array,
-                    'compare' => 'IN' // Use IN for an array of values
-                )
-            ),
-            'fields'   => 'ids' // Only return IDs
-        );
+                'taxonomy' => 'product_cat',
+                'slug'     => $formatted_slugs, // Use an array of slugs for matching
+                'fields'   => 'ids', // Only return IDs
+                'hide_empty' => false,   // Include empty categories
+            );
 
         $categories = get_terms($args);
 
+        global $wpdb;
+        $lastQ =  $wpdb->last_query;
         if (!empty($categories)) {
             return $categories; // Return the array of category IDs
         }
 
+        
+
         return null; // No categories found
     }
 
-    public function update_product($json_data) {
-        $data = json_decode($json_data, true);
-        
+    public function update_product($data) {
         if (!$data) {
             return 'Invalid JSON data';
         }
@@ -62,7 +63,7 @@ class WooCommerceProductManager {
             $images = $product_data['images'];
 
             // Prepare category IDs
-            $category_ids = $this->getCategoryIds($categories);
+            $category_ids = $this->getCategoryUrls($categories);
             $wp_category_ids =$this->get_all_product_categories($category_ids);
 
             // Check if the product exists
