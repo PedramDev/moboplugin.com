@@ -51,6 +51,7 @@ class WooCommerceProductManager
         return null; // No categories found
     }
 
+    //174789827 multi attr
     public function update_product($data)
     {
         if (!$data) {
@@ -66,7 +67,7 @@ class WooCommerceProductManager
             $categories = $product_data['productCategories'];
             $attributes = $product_data['attributes'];
             $variants = $product_data['variants'];
-            $images = $product_data['images'];
+            $images = [];//$product_data['images'];
 
             // Prepare category IDs
             $category_ids = $this->getCategoryUrls($categories);
@@ -130,16 +131,26 @@ class WooCommerceProductManager
                 foreach ($attribute['values'] as $value) {
                     $values[] = $value['value'];
                 }
-                $attribute_data[] = [
-                    'name' => $attribute['name'],
-                    'options' => $values,
-                    'position' => 0,
-                    'visible' => true,
-                    'variation' => true,
-                ];
+
+
+                $newAttr = new \WC_Product_Attribute();
+                $newAttr->set_name($attribute['name']);
+                $newAttr->set_visible(true);
+                $newAttr->set_variation(true);
+                $newAttr->set_options($values);
+
+                $attribute_data[] = $newAttr;
+                // $attribute_data[] = [
+                //     'name' => 'Color',//$attribute['name'],
+                //     'options' => ['Red', 'Blue'],//$values,
+                //     'visible' => true,
+                //     'variation' => true,
+                // ];
                 // Store GUID for the attribute
-                update_post_meta($wp_product_id, 'guid', $attribute['id']);
+                update_post_meta($wp_product_id, 'attr_guid', $attribute['id']);
             }
+            // $js = json_encode($attribute_data);
+            
             $product->set_attributes($attribute_data);
             $product->save();
 
@@ -165,10 +176,9 @@ class WooCommerceProductManager
                 $variation->set_stock_status($variant['stock'] > 0 ? 'instock' : 'outofstock');
 
                 // Set variant attributes
-                $variant_attributes = [
-                    'model' => $variant['title'] // Assuming 'model' is the attribute name
-                ];
-                $variation->set_attributes($variant_attributes);
+
+                
+                $variation->set_attributes($variant['attributes']);
                 $variation->update_meta_data('guid', $variant['variantId']); // Store GUID
                 $variation->save();
             }
