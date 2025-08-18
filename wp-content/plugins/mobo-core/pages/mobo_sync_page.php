@@ -20,14 +20,14 @@ function mobo_core_sync_page() {
 
         $apiFunc = new \MoboCore\ApiFunctions();
 
-        $categoriesDataJson = $apiFunc->getCategoriesAsJson();
-        $catFunc = new \MoboCore\WooCommerceCategoryManager();
-        $catFunc->addOrUpdateAllCategories($categoriesDataJson);
+        // $categoriesDataJson = $apiFunc->getCategoriesAsJson();
+        // $catFunc = new \MoboCore\WooCommerceCategoryManager();
+        // $catFunc->addOrUpdateAllCategories($categoriesDataJson);
 
 
-        // $productsDataJson = $apiFunc->getProductsAsJson();
-        // $productFunc = new \MoboCore\WooCommerceProductManager();
-        // $productFunc->update_product($productsDataJson);
+        $productsDataJson = $apiFunc->getProductsAsJson();
+        $productFunc = new \MoboCore\WooCommerceProductManager();
+        $productFunc->update_product($productsDataJson);
 
     }
     ?>

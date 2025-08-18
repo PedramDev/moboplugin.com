@@ -1,52 +1,58 @@
 <?php
+
 namespace MoboCore;
 
-class WooCommerceProductManager {
+class WooCommerceProductManager
+{
 
-    private function getCategoryUrls($categories) {
-        $ids = array_map(function($category) {
-            return $category['url'];
+    private function getCategoryUrls($categories)
+    {
+        $ids = array_map(function ($category) {
+            return $category['categoryId'];
         }, $categories);
-        
+
         return $ids;
     }
 
-     /**
+    /**
      * Get category woocommerce IDs by third-party IDs
      * @param array $meta_value_array Array of ThirdPartyIds
      * @return array|null Array of WordPress category IDs or null if none found
      */
-    private function get_all_product_categories($slugs)
+    private function get_all_product_categories($guids)
     {
-        if (!is_array($slugs)) {
+        if (!is_array($guids)) {
             return null; // or handle the error as needed
         }
 
-        $formatted_slugs = array_map(function($slug) {
-            return basename($slug); // Get the last part of the slug
-        }, $slugs);
-
         $args = array(
-                'taxonomy' => 'product_cat',
-                'slug'     => $formatted_slugs, // Use an array of slugs for matching
-                'fields'   => 'ids', // Only return IDs
-                'hide_empty' => false,   // Include empty categories
-            );
+            'taxonomy' => 'product_cat',
+            'meta_query' => array(
+                array(
+                    'key' => 'guid',
+                    'value' => $guids,
+                    'compare' => 'in'
+                )
+            ),
+            'hide_empty' => false,   // Include empty categories
+            'fields' => 'ids' // Only return IDs
+        );
 
         $categories = get_terms($args);
 
-        global $wpdb;
-        $lastQ =  $wpdb->last_query;
+        // global $wpdb;
+        // $lastQ =  $wpdb->last_query;
         if (!empty($categories)) {
             return $categories; // Return the array of category IDs
         }
 
-        
+
 
         return null; // No categories found
     }
 
-    public function update_product($data) {
+    public function update_product($data)
+    {
         if (!$data) {
             return 'Invalid JSON data';
         }
@@ -57,14 +63,14 @@ class WooCommerceProductManager {
             $price = $product_data['price'];
             $title = $product_data['title'];
             $caption = $product_data['caption'];
-            $categories = $product_data['categories'];
+            $categories = $product_data['productCategories'];
             $attributes = $product_data['attributes'];
             $variants = $product_data['variants'];
             $images = $product_data['images'];
 
             // Prepare category IDs
             $category_ids = $this->getCategoryUrls($categories);
-            $wp_category_ids =$this->get_all_product_categories($category_ids);
+            $wp_category_ids = $this->get_all_product_categories($category_ids);
 
             // Check if the product exists
             $existing_product_id = null;
@@ -97,7 +103,6 @@ class WooCommerceProductManager {
             $product->set_manage_stock(true);
             $product->set_stock_quantity($stock);
             $product->set_category_ids($wp_category_ids);
-            $product->update_meta_data('guid', $product_id); // Store GUID
 
             // Handle images
             if (!empty($images)) {
@@ -114,22 +119,26 @@ class WooCommerceProductManager {
             }
 
             // Save the product
-            $product_id = $product->save();
+            $wp_product_id = $product->save();
+            $product->update_meta_data('guid', $product_id); // Store GUID
 
             // Update or create attributes
             $attribute_data = [];
             foreach ($attributes as $attribute) {
                 // Ensure the attribute has multiple values
-                $attribute_values = array_filter(array_map('trim', explode(',', $attribute['value'])));
+                $values = [];
+                foreach ($attribute['values'] as $value) {
+                    $values[] = $value['value'];
+                }
                 $attribute_data[] = [
                     'name' => $attribute['name'],
-                    'options' => $attribute_values,
+                    'options' => $values,
                     'position' => 0,
                     'visible' => true,
                     'variation' => true,
                 ];
                 // Store GUID for the attribute
-                update_post_meta($product_id, 'guid', $attribute['id']);
+                update_post_meta($wp_product_id, 'guid', $attribute['id']);
             }
             $product->set_attributes($attribute_data);
             $product->save();
@@ -137,13 +146,13 @@ class WooCommerceProductManager {
             // Process variants
             foreach ($variants as $variant) {
                 $variant_id = $variant['variantId'];
-                $existing_variant_id = wc_get_product_id_by_sku($variant_id);
-                
+                $existing_variant_id = wc_get_product_id_by_sku($variant_id);//Problem
+
                 if ($existing_variant_id) {
                     $variation = new \WC_Product_Variation($existing_variant_id);
                 } else {
                     $variation = new \WC_Product_Variation();
-                    $variation->set_parent_id($product_id);
+                    $variation->set_parent_id($wp_product_id);
                 }
 
                 // Set variant details
@@ -154,7 +163,7 @@ class WooCommerceProductManager {
                 $variation->set_stock_quantity($variant['stock']);
                 $variation->set_manage_stock(true);
                 $variation->set_stock_status($variant['stock'] > 0 ? 'instock' : 'outofstock');
-                
+
                 // Set variant attributes
                 $variant_attributes = [
                     'model' => $variant['title'] // Assuming 'model' is the attribute name
@@ -168,7 +177,8 @@ class WooCommerceProductManager {
         return 'Products updated successfully';
     }
 
-    private static function upload_image($image_url) {
+    private static function upload_image($image_url)
+    {
         // Ensure the URL is valid
         if (filter_var($image_url, FILTER_VALIDATE_URL)) {
             $upload_dir = wp_upload_dir();
