@@ -140,12 +140,6 @@ class WooCommerceProductManager
                 $newAttr->set_options($values);
 
                 $attribute_data[] = $newAttr;
-                // $attribute_data[] = [
-                //     'name' => 'Color',//$attribute['name'],
-                //     'options' => ['Red', 'Blue'],//$values,
-                //     'visible' => true,
-                //     'variation' => true,
-                // ];
                 // Store GUID for the attribute
                 update_post_meta($wp_product_id, 'attr_guid', $attribute['id']);
             }
@@ -154,11 +148,22 @@ class WooCommerceProductManager
             $product->set_attributes($attribute_data);
             $product->save();
 
-            // Process variants
-            foreach ($variants as $variant) {
-                $variant_id = $variant['variantId'];
-                $existing_variant_id = wc_get_product_id_by_sku($variant_id);//Problem
+            
 
+            foreach ($variants as $variant) {
+                $existing_variant_id =0;
+
+                // Process variants
+                $persisted_variations = $product->get_children();
+
+                // Loop through each variation
+                foreach ($persisted_variations as $variation_id) {
+                    // Check if the meta key exists for this variation
+                    if (get_post_meta($variation_id, 'variant_guid', true)) {
+                        $existing_variant_id = $variation_id; // Return the variation ID
+                    }
+                }
+                
                 if ($existing_variant_id) {
                     $variation = new \WC_Product_Variation($existing_variant_id);
                 } else {
@@ -176,12 +181,20 @@ class WooCommerceProductManager
                 $variation->set_stock_status($variant['stock'] > 0 ? 'instock' : 'outofstock');
 
                 // Set variant attributes
-
-                
-                $variation->set_attributes($variant['attributes']);
-                $variation->update_meta_data('guid', $variant['variantId']); // Store GUID
+                $variant_attributes = [];
+                foreach ($variant['attributes'] as $attribute) {
+                    $variant_attributes[$attribute['name']] = $attribute['option']; // Set the first option
+                }
+                $asdad= $variation->get_attribute('مدل');
+                $asdad2= $variation->get_attributes();
+                $variation->set_attributes($variant_attributes);
+                            
+                // $variation->set_attributes($variant['attributes']);
+                $variation->update_meta_data('variant_guid', $variant['variantId']); // Store GUID
                 $variation->save();
             }
+
+            $product->save();
         }
 
         return 'Products updated successfully';
