@@ -79,7 +79,7 @@ class WooCommerceProductManager
                 'post_type' => 'product',
                 'meta_query' => [
                     [
-                        'key' => 'guid',
+                        'key' => 'product_guid',
                         'value' => $product_id,
                         'compare' => '='
                     ]
@@ -97,7 +97,6 @@ class WooCommerceProductManager
                 $product = new \WC_Product_Variable();
             }
 
-            // Set product details
             $product->set_name($title);
             $product->set_description($caption);
             $product->set_regular_price($price);
@@ -113,7 +112,7 @@ class WooCommerceProductManager
                     if ($image_id) {
                         $image_ids[] = $image_id;
                         // Store GUID for the image
-                        update_post_meta($image_id, 'guid', $image['id']);
+                        update_post_meta($image_id, 'img_guid', $image['id']);
                     }
                 }
                 $product->set_gallery_image_ids($image_ids);
@@ -121,7 +120,7 @@ class WooCommerceProductManager
 
             // Save the product
             $wp_product_id = $product->save();
-            $product->update_meta_data('guid', $product_id); // Store GUID
+            $product->update_meta_data('product_guid', $product_id); // Store GUID
 
             // Update or create attributes
             $attribute_data = [];
@@ -134,10 +133,11 @@ class WooCommerceProductManager
 
 
                 $newAttr = new \WC_Product_Attribute();
-                $newAttr->set_name($attribute['name']);
+                // $newAttr->set_name($attribute['name']);
+                $newAttr->set_name(sanitize_title('Model'));
                 $newAttr->set_visible(true);
                 $newAttr->set_variation(true);
-                $newAttr->set_options($values);
+                $newAttr->set_options(['A12']);
 
                 $attribute_data[] = $newAttr;
                 // Store GUID for the attribute
@@ -146,7 +146,7 @@ class WooCommerceProductManager
             // $js = json_encode($attribute_data);
             
             $product->set_attributes($attribute_data);
-            $product->save();
+            $product->save(); // Save the product after setting attributes
 
             
 
@@ -159,7 +159,7 @@ class WooCommerceProductManager
                 // Loop through each variation
                 foreach ($persisted_variations as $variation_id) {
                     // Check if the meta key exists for this variation
-                    if (get_post_meta($variation_id, 'variant_guid', true)) {
+                    if (get_post_meta($variation_id, 'variant_guid', true) == $variant['variantId']) {
                         $existing_variant_id = $variation_id; // Return the variation ID
                     }
                 }
@@ -170,6 +170,12 @@ class WooCommerceProductManager
                     $variation = new \WC_Product_Variation();
                     $variation->set_parent_id($wp_product_id);
                 }
+
+                // $m = $variation->get_attribute('Model');
+                // $m2 = $variation->get_attributes();
+                // $m3 = $variation->get_attribute_summary();
+                // $m4 = $variation->has_attributes();
+                // $m5 = $variation->get_variation_attributes();
 
                 // Set variant details
                 $variation->set_regular_price($variant['price']);
@@ -182,16 +188,26 @@ class WooCommerceProductManager
 
                 // Set variant attributes
                 $variant_attributes = [];
-                foreach ($variant['attributes'] as $attribute) {
-                    $variant_attributes[$attribute['name']] = $attribute['option']; // Set the first option
-                }
-                $asdad= $variation->get_attribute('مدل');
-                $asdad2= $variation->get_attributes();
+                $variant_attributes = [
+                    'pa_model' => 'A12' // Use the slug of the attribute here
+                ];
+                // foreach ($variant['attributes'] as $attribute) {
+                //     $variant_attributes[] =
+                //     [
+                //         'name'  => $attribute['name'],
+                //         'value' => $attribute['option']
+                //     ];
+                // }
+
+                error_log(print_r($attribute_data, true)); // Log attributes
+                error_log(print_r($variant_attributes, true)); // Log variant attributes
                 $variation->set_attributes($variant_attributes);
-                            
+                $variation->set_default_attributes($variant_attributes);
                 // $variation->set_attributes($variant['attributes']);
                 $variation->update_meta_data('variant_guid', $variant['variantId']); // Store GUID
                 $variation->save();
+                error_log(print_r($variation->get_attributes(), true)); // Log variation attributes after saving
+                break;
             }
 
             $product->save();
