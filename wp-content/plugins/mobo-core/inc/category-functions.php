@@ -77,7 +77,7 @@ class WooCommerceCategoryManager
                 );
 
                 // Update term meta
-                update_term_meta($termId, 'guid', $guidValue);
+                \update_term_meta($termId, 'guid', $guidValue);
 
                 return "Category updated successfully for ID: " . $data['id'];
             } else {
@@ -107,7 +107,7 @@ class WooCommerceCategoryManager
                 );
 
                 // Add term meta
-                add_term_meta($termId, 'guid', $guidValue);
+                \add_term_meta($termId, 'guid', $guidValue);
 
                 return "Category created successfully for ID: " . $data['id'];
             }

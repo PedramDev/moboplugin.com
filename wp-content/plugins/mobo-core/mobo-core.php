@@ -44,41 +44,16 @@ add_action('admin_menu', 'mobo_core_admin_menu');
 function mobo_core_admin_menu()
 {
     add_menu_page('تنظیمات موبو', 'تنظیمات موبو', 'manage_options', 'mobo_core_admin', 'mobo_core_admin_page');
-    add_submenu_page('mobo_core_admin','همگام سازی دسته بندی', 'همگام سازی دسته بندی', 'manage_options', 'mobo_core_sync', 'mobo_core_sync_page');
+    add_submenu_page('mobo_core_admin','همگام سازی', 'همگام سازی', 'manage_options', 'mobo_core_sync', 'mobo_core_sync_page');
 }
 
 
 
-
-
-
-
-
-function monitor_outbound_requests($response, $request, $url) {
-    // Start time tracking
-    $start_time = microtime(true);
-
-    // Check if the request is an outbound request
-    if (isset($request['timeout'])) {
-        // Calculate the execution time
-        $execution_time = microtime(true) - $start_time;
-
-        // Define a threshold (in seconds)
-        $threshold = 1; // Change this value to your desired threshold
-
-        // Log the request if it exceeds the threshold
-        if ($execution_time > $threshold) {
-            $timestamp = date('Y-m-d H:i:s');
-            $log_entry = sprintf("[%s] Slow Outbound Request to %s - Execution Time: %.2f seconds\n", $timestamp, $url, $execution_time);
-            error_log($log_entry, 3, __DIR__ . '/outbound_request_log.log');
-
-            // Optionally block the request (for demonstration purposes)
-            // Uncomment the following lines to block it
-            // return new WP_Error('request_blocked', 'Request blocked due to slow execution time.');
-        }
-    }
-
-    return $response;
+add_filter('cron_schedules', 'custom_cron_schedule');
+function custom_cron_schedule($schedules) {
+    $schedules['mobo_core_interval'] = array(
+        'interval' => 40,
+        'display'  => __('Every 40 sec'),
+    );
+    return $schedules;
 }
-
-add_filter('pre_http_request', 'monitor_outbound_requests', 10, 3);

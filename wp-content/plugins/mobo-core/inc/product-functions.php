@@ -4,6 +4,11 @@ namespace MoboCore;
 
 class WooCommerceProductManager
 {
+    public function __construct()
+    {
+        // Hook to a point where WordPress is fully loaded
+        add_action('init', [$this, 'init']);
+    }
 
     private function getCategoryUrls($categories)
     {
@@ -38,7 +43,7 @@ class WooCommerceProductManager
             'fields' => 'ids' // Only return IDs
         );
 
-        $categories = get_terms($args);
+        $categories = \get_terms($args);
 
         // global $wpdb;
         // $lastQ =  $wpdb->last_query;
@@ -67,7 +72,7 @@ class WooCommerceProductManager
             $categories = $product_data['productCategories'];
             $attributes = $product_data['attributes'];
             $variants = $product_data['variants'];
-            $images = [];//$product_data['images'];
+            $images = $product_data['images'];
 
             // Prepare category IDs
             $category_ids = $this->getCategoryUrls($categories);
@@ -87,35 +92,40 @@ class WooCommerceProductManager
                 'posts_per_page' => 1,
             ];
 
-            $existing_products = get_posts($args);
+            $existing_products = \get_posts($args);
             if (!empty($existing_products)) {
                 $existing_product_id = $existing_products[0]->ID;
             }
             if ($existing_product_id) {
-                $product = wc_get_product($existing_product_id);
+                $product = \wc_get_product($existing_product_id);
             } else {
                 $product = new \WC_Product_Variable();
             }
 
             $product->set_name($title);
-            $product->set_description($caption);
+            $product->set_description($caption ?? '');
             $product->set_regular_price($price);
             $product->set_manage_stock(true);
             $product->set_stock_quantity($stock);
             $product->set_category_ids($wp_category_ids);
+            $image_ids = $product->get_gallery_image_ids();
 
             // Handle images
             if (!empty($images)) {
                 $image_ids = [];
                 foreach ($images as $image) {
-                    $image_id = self::upload_image($image['url']);
-                    if ($image_id) {
-                        $image_ids[] = $image_id;
-                        // Store GUID for the image
-                        update_post_meta($image_id, 'img_guid', $image['id']);
+                    //if image not exist add it
+                    if(\get_post_meta($image['id'],'img_guid',true) != $image['id']){
+                        $image_id = self::upload_image($image['url']);
+                        if ($image_id) {
+                            $image_ids[] = $image_id;
+                            // Store GUID for the image
+                            \update_post_meta($image_id, 'img_guid', $image['id']);
+                        }
                     }
                 }
                 $product->set_gallery_image_ids($image_ids);
+                $product->set_image_id($image_ids[0]);
             }
 
             // Save the product
@@ -140,7 +150,7 @@ class WooCommerceProductManager
 
                 $attribute_data[] = $newAttr;
                 // Store GUID for the attribute
-                update_post_meta($wp_product_id, 'attr_guid', $attribute['id']);
+                \update_post_meta($wp_product_id, 'attr_guid', $attribute['id']);
             }
             
             $product->set_attributes($attribute_data);
@@ -157,7 +167,7 @@ class WooCommerceProductManager
                 // Loop through each variation
                 foreach ($persisted_variations as $variation_id) {
                     // Check if the meta key exists for this variation
-                    if (get_post_meta($variation_id, 'variant_guid', true) == $variant['variantId']) {
+                    if (\get_post_meta($variation_id, 'variant_guid', true) == $variant['variantId']) {
                         $existing_variant_id = $variation_id; // Return the variation ID
                     }
                 }
@@ -187,26 +197,20 @@ class WooCommerceProductManager
                     ];
                 }
 
-                error_log(print_r($attribute_data, true)); // Log attributes
-                error_log(print_r($variant_attributes, true)); // Log variant attributes
-                // $variation->set_attributes($variant_attributes);
-                // $variation->set_default_attributes($variant_attributes);
-                // $variation->set_attributes($variant['attributes']);
-                // $variation->add_meta_data('attribute_model', 'red'); // Store GUID
+                // error_log(print_r($attribute_data, true)); // Log attributes
+                // error_log(print_r($variant_attributes, true)); // Log variant attributes
+
                 $variation->update_meta_data('variant_guid', $variant['variantId']); // Store GUID
 
                 foreach ($variant['attributes'] as $attribute) {
-                    $key = 'attribute_'.sanitize_title($attribute['name']);
+                    $key = 'attribute_'.\sanitize_title($attribute['name']);
                     $variation->update_meta_data($key, $attribute['option']); // Store GUID
                 }
 
 
                 $variation->save();
                 
-                // foreach ($variant['attributes'] as $attribute) {
-                //     $result = $variation->update_meta_data('attribute_'.sanitize_title($attribute['name']), $attribute['option']); // Store GUID
-                // }
-                error_log(print_r($variation->get_attributes(), true)); // Log variation attributes after saving
+                // error_log(print_r($variation->get_attributes(), true)); // Log variation attributes after saving
             }
 
             $product->save();
@@ -215,33 +219,39 @@ class WooCommerceProductManager
         return 'Products updated successfully';
     }
 
-    private static function upload_image($image_url)
+    private function upload_image($image_url)
     {
         // Ensure the URL is valid
-        if (filter_var($image_url, FILTER_VALIDATE_URL)) {
-            $upload_dir = wp_upload_dir();
-            $image_data = file_get_contents($image_url);
-            $filename = basename($image_url);
+        if (\filter_var($image_url, FILTER_VALIDATE_URL)) {
+            if ( ! function_exists( 'wp_generate_attachment_metadata' ) ) {
+                require_once ABSPATH . 'wp-admin/includes/image.php';
+            }
+
+
+
+            $upload_dir = \wp_upload_dir();
+            $image_data = \file_get_contents($image_url);
+            $filename = \basename($image_url);
 
             // Check if the image was successfully retrieved
             if ($image_data) {
                 $file_path = $upload_dir['path'] . '/' . $filename;
-                file_put_contents($file_path, $image_data);
+                \file_put_contents($file_path, $image_data);
 
                 // Prepare the attachment
-                $wp_filetype = wp_check_filetype($filename, null);
+                $wp_filetype = \wp_check_filetype($filename, null);
                 $attachment = [
                     'post_mime_type' => $wp_filetype['type'],
-                    'post_title' => sanitize_file_name($filename),
+                    'post_title' => \sanitize_file_name($filename),
                     'post_content' => '',
                     'post_status' => 'inherit'
                 ];
 
                 // Insert the attachment into the media library
-                $attachment_id = wp_insert_attachment($attachment, $file_path);
+                $attachment_id = \wp_insert_attachment($attachment, $file_path);
                 // Generate attachment metadata
-                $attach_data = wp_generate_attachment_metadata($attachment_id, $file_path);
-                wp_update_attachment_metadata($attachment_id, $attach_data);
+                $attach_data = \wp_generate_attachment_metadata($attachment_id, $file_path);
+                \wp_update_attachment_metadata($attachment_id, $attach_data);
 
                 return $attachment_id;
             }
