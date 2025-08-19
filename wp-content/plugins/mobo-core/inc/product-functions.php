@@ -133,17 +133,15 @@ class WooCommerceProductManager
 
 
                 $newAttr = new \WC_Product_Attribute();
-                // $newAttr->set_name($attribute['name']);
-                $newAttr->set_name(sanitize_title('Model'));
+                $newAttr->set_name($attribute['name']);
                 $newAttr->set_visible(true);
                 $newAttr->set_variation(true);
-                $newAttr->set_options(['A12']);
+                $newAttr->set_options($values);
 
                 $attribute_data[] = $newAttr;
                 // Store GUID for the attribute
                 update_post_meta($wp_product_id, 'attr_guid', $attribute['id']);
             }
-            // $js = json_encode($attribute_data);
             
             $product->set_attributes($attribute_data);
             $product->save(); // Save the product after setting attributes
@@ -171,12 +169,6 @@ class WooCommerceProductManager
                     $variation->set_parent_id($wp_product_id);
                 }
 
-                // $m = $variation->get_attribute('Model');
-                // $m2 = $variation->get_attributes();
-                // $m3 = $variation->get_attribute_summary();
-                // $m4 = $variation->has_attributes();
-                // $m5 = $variation->get_variation_attributes();
-
                 // Set variant details
                 $variation->set_regular_price($variant['price']);
                 if (isset($variant['comparePrice'])) {
@@ -188,26 +180,33 @@ class WooCommerceProductManager
 
                 // Set variant attributes
                 $variant_attributes = [];
-                $variant_attributes = [
-                    'pa_model' => 'A12' // Use the slug of the attribute here
-                ];
-                // foreach ($variant['attributes'] as $attribute) {
-                //     $variant_attributes[] =
-                //     [
-                //         'name'  => $attribute['name'],
-                //         'value' => $attribute['option']
-                //     ];
-                // }
+                foreach ($variant['attributes'] as $attribute) {
+                    $variant_attributes[] =
+                    [
+                        $attribute['name'] => $attribute['option']
+                    ];
+                }
 
                 error_log(print_r($attribute_data, true)); // Log attributes
                 error_log(print_r($variant_attributes, true)); // Log variant attributes
-                $variation->set_attributes($variant_attributes);
-                $variation->set_default_attributes($variant_attributes);
+                // $variation->set_attributes($variant_attributes);
+                // $variation->set_default_attributes($variant_attributes);
                 // $variation->set_attributes($variant['attributes']);
+                // $variation->add_meta_data('attribute_model', 'red'); // Store GUID
                 $variation->update_meta_data('variant_guid', $variant['variantId']); // Store GUID
+
+                foreach ($variant['attributes'] as $attribute) {
+                    $key = 'attribute_'.sanitize_title($attribute['name']);
+                    $variation->update_meta_data($key, $attribute['option']); // Store GUID
+                }
+
+
                 $variation->save();
+                
+                // foreach ($variant['attributes'] as $attribute) {
+                //     $result = $variation->update_meta_data('attribute_'.sanitize_title($attribute['name']), $attribute['option']); // Store GUID
+                // }
                 error_log(print_r($variation->get_attributes(), true)); // Log variation attributes after saving
-                break;
             }
 
             $product->save();
