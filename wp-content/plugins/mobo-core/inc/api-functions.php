@@ -77,4 +77,21 @@ class ApiFunctions
         $info = $this->fetch_data_from_api($this->base_url . 'LicenseInfo');
         return $info;
     }
+
+    
+    public function get_ip(){
+        
+        // Make a GET request
+        $response = \wp_remote_get($this->base_url . 'get-ip');
+
+        // Check for errors
+        if (is_wp_error($response)) {
+            return false;
+        }
+
+        // Get the response body
+        $body = \wp_remote_retrieve_body($response);
+
+        return $body;
+    }
 }

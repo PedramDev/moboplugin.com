@@ -15,6 +15,9 @@ function mobo_core_admin_page() {
     $global_additional_price = get_option('global_additional_price');
 
 
+    $apiFunc = new \MoboCore\ApiFunctions();
+    $get_ip =  $apiFunc->get_ip();
+
 
     // Check if the form is submitted
     if (isset($_POST['save_mobo_core_settings'])) {
@@ -24,10 +27,10 @@ function mobo_core_admin_page() {
         update_option('global_additional_price', trim($_POST['global_additional_price']));
 
 
-        $global_product_auto_stock = isset($_POST['global_product_auto_stock']) ? '1' : '0';
-        $global_product_auto_price = isset($_POST['global_product_auto_price']) ? '1' : '0';
-        $global_product_auto_title = isset($_POST['global_product_auto_title']) ? '1' : '0';
-        $global_product_auto_caption = isset($_POST['global_product_auto_caption']) ? '1' : '0';
+        $global_product_auto_stock = isset($_POST['global_product_auto_stock']) ? '0' : '1';
+        $global_product_auto_price = isset($_POST['global_product_auto_price']) ? '0' : '1';
+        $global_product_auto_title = isset($_POST['global_product_auto_title']) ? '0' : '1';
+        $global_product_auto_caption = isset($_POST['global_product_auto_caption']) ? '0' : '1';
 
         update_option('global_product_auto_stock', $global_product_auto_stock);
         update_option('global_product_auto_price', $global_product_auto_price);
@@ -41,14 +44,30 @@ function mobo_core_admin_page() {
     }
     ?>
 
-    <div class="wrap">
-        <form method="post" action="">
+    <div class="wrap" style="
+                        display: flex;
+                        flex-direction: column;
+                        gap: 20px;
+                        max-width: 500px;">
+        <form method="post" action="" 
+                            style="display: flex;
+                            flex-direction: column;
+                            gap: 20px;
+                            max-width: 500px;">
+
+            <p>
+                برای دریافت لایسنس این آی پی را باید توحیل پشتیبانی دهید:
+                <br />
+                IP: <code><?php echo $get_ip; ?></code>
+            </p>
+
+
             <label for="token">Token:</label>
-            <input type="text" name="token" id="token" value="<?php echo get_option('mobo_core_token'); ?>" />
+            <input type="text" style="font-family:'Courier New', Courier, monospace;" dir="ltr" name="token" id="token" value="<?php echo get_option('mobo_core_token'); ?>" />
 
             
             <label for="SecurityCode">Webhook SecurityCode:</label>
-            <input type="text" name="SecurityCode" id="SecurityCode" value="<?php echo get_option('mobo_core_security_code'); ?>" />
+            <input type="text" style="font-family:'Courier New', Courier, monospace;" dir="ltr" name="SecurityCode" id="SecurityCode" value="<?php echo get_option('mobo_core_security_code'); ?>" />
 
 
             <hr />
@@ -71,7 +90,7 @@ function mobo_core_admin_page() {
             <label for="global_additional_price">
                 پیش فرض سود به تومان - عدد فقط به انگیسی وارد کنید
             </label>
-            <input type="text" name="global_additional_price" id="global_additional_price" value="<?php echo $global_additional_price; ?>" />
+            <input type="text" style="font-family:'Courier New', Courier, monospace;" dir="ltr" name="global_additional_price" id="global_additional_price" value="<?php echo $global_additional_price; ?>" />
 
 
             <input type="submit" name="save_mobo_core_settings" value="ذخیره تنظیمات" class="button button-primary" />
