@@ -67,6 +67,10 @@ add_action('mobo_core_sync_products_event', 'mobo_core_sync_products');
 // Admin page function
 function mobo_core_sync_page() {
 
+    $apiFunc = new \MoboCore\ApiFunctions(); // Replace with your API function class
+    $info = $apiFunc->getLicenseInfo();
+
+    if(!mobo_isLicenseExpired()){
     if (isset($_POST['submit'])) {
         // Verify nonce for security
         check_admin_referer('mobo_core_sync_categories');
@@ -89,9 +93,24 @@ function mobo_core_sync_page() {
         }
     }
     ?>
+        <p>
+            <?php echo $info['message']; ?>
+            <br />
+            <?php echo $info['timeLeft']; ?>
+        </p>
         <form method="post" action="">
             <?php wp_nonce_field('mobo_core_sync_categories'); ?>
             <?php submit_button('همگام سازی'); ?>
         </form>
     <?php
+    }
+else{
+    ?>
+    <p>
+        <?php echo $info['message']; ?>
+        <br />
+        <?php echo $info['timeLeft']; ?>
+    </p>
+    <?php
+}
 }

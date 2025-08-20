@@ -16,14 +16,14 @@ if (!defined('ABSPATH')) {
 }
 
 define('MOBO_CORE_VERSION', $plugin_data['Version']);
-define('MOBO_CORE_PLUGIN_URL',plugin_dir_url(__FILE__));
+define('MOBO_CORE_PLUGIN_URL', plugin_dir_url(__FILE__));
 
 require 'vendor/autoload.php';
 require 'inc/index.php';
 require 'pages/index.php';
 
 
-add_filter('http_request_args', function($args) {
+add_filter('http_request_args', function ($args) {
     $args['sslverify'] = false;
     return $args;
 });
@@ -44,16 +44,42 @@ add_action('admin_menu', 'mobo_core_admin_menu');
 function mobo_core_admin_menu()
 {
     add_menu_page('تنظیمات موبو', 'تنظیمات موبو', 'manage_options', 'mobo_core_admin', 'mobo_core_admin_page');
-    add_submenu_page('mobo_core_admin','همگام سازی', 'همگام سازی', 'manage_options', 'mobo_core_sync', 'mobo_core_sync_page');
+    add_submenu_page('mobo_core_admin', 'همگام سازی', 'همگام سازی', 'manage_options', 'mobo_core_sync', 'mobo_core_sync_page');
 }
 
 
 
 add_filter('cron_schedules', 'custom_cron_schedule');
-function custom_cron_schedule($schedules) {
+function custom_cron_schedule($schedules)
+{
     $schedules['mobo_core_interval'] = array(
         'interval' => 40,
         'display'  => __('Every 40 sec'),
     );
     return $schedules;
+}
+
+
+function mobo_isLicenseExpired()
+{
+    $apiFunc = new \MoboCore\ApiFunctions(); // Replace with your API function class
+    $info = $apiFunc->getLicenseInfo();
+
+    if ($info['isExpired']) {
+?>
+        <div class="notice notice-error is-dismissible">
+            <p><?php echo $info['message']; ?></p>
+        </div>
+    <?php
+
+        return true;
+    } else {
+    ?>
+        <div class="notice notice-success is-dismissible">
+            <p><?php echo $info['message']; ?></p>
+            <p><?php echo $info['message']; ?></p>
+        </div>
+<?php
+        return false;
+    }
 }

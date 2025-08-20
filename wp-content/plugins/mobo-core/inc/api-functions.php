@@ -4,13 +4,21 @@ namespace MoboCore;
 
 class ApiFunctions
 {
-    private $base_url = 'https://customers.mobomobo.ir/';
+    // private $base_url = 'https://customers.mobomobo.ir/';
+    private $base_url = 'https://localhost:7015/';
 
     function fetch_data_from_api($url)
     {
-
+        $token = get_option('mobo_core_token');
+        // Set up the headers
+        $args = [
+            'headers' => [
+                'Token' => $token,
+            ],
+        ];
+        
         // Make a GET request
-        $response = \wp_remote_get($url);
+        $response = \wp_remote_get($url,$args);
 
         // Check for errors
         if (\is_wp_error($response)) {
@@ -31,8 +39,17 @@ class ApiFunctions
     }
 
     public function getProductsCount(){
+        $token = get_option('mobo_core_token');
+        
+        // Set up the headers
+        $args = [
+            'headers' => [
+                'Token' => $token,
+            ],
+        ];
+
         // Make a GET request
-        $response = \wp_remote_get($this->base_url . 'get-products-count');
+        $response = \wp_remote_get($this->base_url . 'get-products-count',$args);
 
         // Check for errors
         if (is_wp_error($response)) {
@@ -53,5 +70,11 @@ class ApiFunctions
     public function getCategoriesAsJson(){
         $categoriesArray = $this->fetch_data_from_api($this->base_url . 'get-categories');
         return $categoriesArray;
+    }
+
+
+    public function getLicenseInfo(){
+        $info = $this->fetch_data_from_api($this->base_url . 'LicenseInfo');
+        return $info;
     }
 }
