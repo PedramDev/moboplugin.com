@@ -10,6 +10,21 @@ function mobo_core_admin_page() {
     // Check if the form is submitted
     if (isset($_POST['save_mobo_core_settings'])) {
         update_option('mobo_core_token', trim($_POST['token']));
+        update_option('mobo_core_security_code', trim($_POST['SecurityCode']));
+
+        update_option('global_additional_price', trim($_POST['global_additional_price']));
+
+
+        $global_product_auto_stock = isset($_POST['global_product_auto_stock']) ? '1' : '0';
+        $global_product_auto_price = isset($_POST['global_product_auto_price']) ? '1' : '0';
+        $global_product_auto_title = isset($_POST['global_product_auto_title']) ? '1' : '0';
+        $global_product_auto_caption = isset($_POST['global_product_auto_caption']) ? '1' : '0';
+
+        update_option('global_product_auto_stock', $global_product_auto_stock);
+        update_option('global_product_auto_price', $global_product_auto_price);
+        update_option('global_product_auto_title', $global_product_auto_title);
+        update_option('global_product_auto_caption', $global_product_auto_caption);
+
         // Optional: Add an admin notice
         add_action('admin_notices', function() {
             echo '<div class="updated"><p>تنظیمات موبوکور ذخیره شده</p></div>';
@@ -21,7 +36,36 @@ function mobo_core_admin_page() {
         <form method="post" action="">
             <label for="token">Token:</label>
             <input type="text" name="token" id="token" value="<?php echo get_option('mobo_core_token'); ?>" />
-            <input type="submit" name="save_mobo_core_settings" value="Save Token" class="button button-primary" />
+
+            
+            <label for="SecurityCode">Webhook SecurityCode:</label>
+            <input type="text" name="SecurityCode" id="SecurityCode" value="<?php echo get_option('mobo_core_security_code'); ?>" />
+
+
+            <hr />
+
+            <label>
+                <input type="checkbox" name="global_product_auto_stock" value="1" <?php checked($global_product_auto_stock, '1'); ?>>  بروزرسانی اتوماتیک «موجودی انبار»
+            </label>
+            <label>
+                <input type="checkbox" name="global_product_auto_price" value="1" <?php checked($global_product_auto_price, '1'); ?>>   بروزرسانی اتوماتیک «قیمت»
+            </label>
+            <label>
+                <input type="checkbox" name="global_product_auto_title" value="1" <?php checked($global_product_auto_title, '1'); ?>>   بروزرسانی اتوماتیک «عنوان»
+            </label>
+            <label>
+                <input type="checkbox" name="global_product_auto_caption" value="1" <?php checked($global_product_auto_caption, '1'); ?>>   بروزرسانی اتوماتیک «محتوا»
+            </label>
+
+            <hr />
+
+            <label for="global_additional_price">
+                پیش فرض سود به تومان - عدد فقط به انگیسی وارد کنید
+            </label>
+            <input type="text" name="global_additional_price" id="global_additional_price" value="<?php echo get_option('global_additional_price'); ?>" />
+
+
+            <input type="submit" name="save_mobo_core_settings" value="ذخیره تنظیمات" class="button button-primary" />
         </form>
     </div>
 

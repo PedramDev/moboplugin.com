@@ -8,3 +8,4 @@ if (!defined('ABSPATH')) {
 require 'category-functions.php';
 require 'product-functions.php';
 require 'api-functions.php';
+require 'custom-metabox.php';

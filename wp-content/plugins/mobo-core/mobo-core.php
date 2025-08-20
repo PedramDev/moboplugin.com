@@ -2,7 +2,7 @@
 /*
 Plugin Name: بروزرسانی موبو کور
 Description: بروزرسانی خودکار محصولات از https://mobomobo.ir/
-Version: 1.0
+Version: 1.2
 Author: Pedram Karimi
 Author URI: http://github.com/PedramDev/
 // Requires PHP: <=8.1.0
@@ -15,10 +15,10 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+$plugin_data = get_plugin_data(__FILE__);
 define('MOBO_CORE_VERSION', $plugin_data['Version']);
 define('MOBO_CORE_PLUGIN_URL', plugin_dir_url(__FILE__));
 
-require 'vendor/autoload.php';
 require 'inc/index.php';
 require 'pages/index.php';
 
