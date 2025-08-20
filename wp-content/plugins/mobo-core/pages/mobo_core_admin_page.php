@@ -7,6 +7,15 @@ if (!defined('ABSPATH')) {
 
 // Admin page function
 function mobo_core_admin_page() {
+
+    $global_product_auto_stock= get_option('global_product_auto_stock');
+    $global_product_auto_price= get_option('global_product_auto_price');
+    $global_product_auto_title= get_option('global_product_auto_title');
+    $global_product_auto_caption = get_option('global_product_auto_caption');
+    $global_additional_price = get_option('global_additional_price');
+
+
+
     // Check if the form is submitted
     if (isset($_POST['save_mobo_core_settings'])) {
         update_option('mobo_core_token', trim($_POST['token']));
@@ -62,7 +71,7 @@ function mobo_core_admin_page() {
             <label for="global_additional_price">
                 پیش فرض سود به تومان - عدد فقط به انگیسی وارد کنید
             </label>
-            <input type="text" name="global_additional_price" id="global_additional_price" value="<?php echo get_option('global_additional_price'); ?>" />
+            <input type="text" name="global_additional_price" id="global_additional_price" value="<?php echo $global_additional_price; ?>" />
 
 
             <input type="submit" name="save_mobo_core_settings" value="ذخیره تنظیمات" class="button button-primary" />

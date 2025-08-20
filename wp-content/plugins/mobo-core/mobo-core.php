@@ -1,6 +1,6 @@
 <?php
 /*
-Plugin Name: بروزرسانی موبو کور
+Plugin Name: mobo-core
 Description: بروزرسانی خودکار محصولات از https://mobomobo.ir/
 Version: 1.2
 Author: Pedram Karimi
@@ -15,7 +15,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-$plugin_data = get_plugin_data(__FILE__);
+$plugin_data = get_plugin_data(__FILE__, false, false);
 define('MOBO_CORE_VERSION', $plugin_data['Version']);
 define('MOBO_CORE_PLUGIN_URL', plugin_dir_url(__FILE__));
 
@@ -54,7 +54,7 @@ function custom_cron_schedule($schedules)
 {
     $schedules['mobo_core_interval'] = array(
         'interval' => 40,
-        'display'  => __('Every 40 sec'),
+        'display'  => 'Every 40 sec',
     );
     return $schedules;
 }
