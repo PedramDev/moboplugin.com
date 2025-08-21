@@ -17,34 +17,6 @@ class WooCommerceCategoryManager
         }
     }
 
-    /**
-     * Get category woocommerce ID by thirdparty ID
-     * @param Number $meta_value ThirdPartyId
-     * @return Null | Number Wordpress category ID
-     */
-    public function get_single_product_category($slugs)
-    {
-        // Ensure slugs are an array
-            if (!is_array($slugs)) {
-                return null; // or handle the error as needed
-            }
-
-            $args = array(
-                'taxonomy' => 'product_cat',
-                'slug'     => $slugs, // Use an array of slugs for matching
-                'fields'   => 'ids' // Only return IDs
-            );
-
-            $categories = get_terms($args);
-
-            if (!empty($categories)) {
-                return array_map('get_term', $categories); // Get full term objects for each ID
-            }
-
-            return []; // No categories found
-    }
-
-
 
 
     private function addOrUpdateCategory($data)
@@ -53,16 +25,26 @@ class WooCommerceCategoryManager
 
         // Prepare category data
         $categoryName = $data['title'];
-        $categorySlug = trim($data['url'], '/'); // Remove leading/trailing slashes
+        $categorySlug = basename(trim($data['url'], '/')); // Remove leading/trailing slashes
         $guidValue = $data['id'];
+        $parentGuidValue = $data['parentId'];
 
         // Check if category exists
-        $existingCategory = $wpdb->get_row(
-            $wpdb->prepare(
-                "SELECT term_id FROM {$wpdb->terms} WHERE slug = %s",
-                $categorySlug
-            )
+        $query = $wpdb->prepare(
+            "SELECT term_id FROM {$wpdb->termmeta} WHERE meta_key = 'category_guid' AND meta_value = %s",
+            $guidValue
         );
+        $existingCategory = $wpdb->get_row($query);
+
+        $parentCategory = null;
+        if($parentGuidValue != null){
+            $parentCategory = $wpdb->get_row(
+                $wpdb->prepare(
+                    "SELECT term_id FROM {$wpdb->termmeta} WHERE meta_key = 'category_guid' AND meta_value = %s",
+                    $parentGuidValue
+                )
+            );
+        }
 
         try {
             if ($existingCategory) {
@@ -72,9 +54,22 @@ class WooCommerceCategoryManager
                 // Update the term name and meta data
                 $wpdb->update(
                     $wpdb->terms,
-                    ['name' => $categoryName],
+                    [
+                        'name' => $categoryName,
+                        'slug' => $categorySlug
+                    ],
                     ['term_id' => $termId]
                 );
+
+                if($parentCategory != null){
+                    $wpdb->update(
+                        $wpdb->term_taxonomy,
+                        [
+                            'parent' => $parentCategory->term_id
+                        ],
+                        ['term_id' => $termId]
+                    );
+                }
 
                 // Update term meta
                 \update_term_meta($termId, 'category_guid', $guidValue);
@@ -101,7 +96,7 @@ class WooCommerceCategoryManager
                         'term_id' => $termId,
                         'taxonomy' => 'product_cat',
                         'description' => '',
-                        'parent' => 0,
+                        'parent' => $parentCategory->term_id,
                         'count' => 0
                     ]
                 );
