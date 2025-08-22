@@ -4,8 +4,8 @@ namespace MoboCore;
 
 class ApiFunctions
 {
-    private $base_url = 'https://customers.mobomobo.ir/';
-    // private $base_url = 'https://localhost:7015/';
+    // private $base_url = 'https://customers.mobomobo.ir/';
+    private $base_url = 'https://localhost:7015/';
 
     function fetch_data_from_api($url)
     {

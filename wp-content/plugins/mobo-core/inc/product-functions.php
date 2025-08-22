@@ -69,6 +69,7 @@ class WooCommerceProductManager
             $price = $product_data['price'];
             $title = $product_data['title'];
             $caption = $product_data['caption'];
+            $product_url = $product_data['url'];
             $comparePrice = $product_data['comparePrice'];
             $categories = $product_data['productCategories'];
             $attributes = $product_data['attributes'];
@@ -112,6 +113,7 @@ class WooCommerceProductManager
             $product->set_manage_stock(true);
             $product->set_stock_quantity($stock);
             $product->set_category_ids($wp_category_ids);
+            $product->set_slug($product_url);
             $image_ids = $product->get_gallery_image_ids();
 
             // Handle images
@@ -382,6 +384,7 @@ class WooCommerceProductManager
             $price = $product_data['price'];
             $title = $product_data['title'];
             $caption = $product_data['caption'];
+            $product_url = $product_data['url'];
             $comparePrice = $product_data['comparePrice'];
             $categories = $product_data['productCategories'];
             $attributes = $product_data['attributes'];
@@ -437,6 +440,7 @@ class WooCommerceProductManager
             }
 
             $product->set_category_ids($wp_category_ids);
+            $product->set_slug($product_url);
             $image_ids = $product->get_gallery_image_ids();
 
             // Handle images

@@ -49,7 +49,7 @@ class WooCommerceCategoryManager
         try {
             if ($existingCategory) {
                 // Update existing category in term_taxonomy
-                $termId = $existingCategory->term_id;
+                $termId = (int)$existingCategory->term_id;
 
                 // Update the term name and meta data
                 $wpdb->update(
@@ -62,10 +62,11 @@ class WooCommerceCategoryManager
                 );
 
                 if($parentCategory != null){
+                    $parentId = (int)$parentCategory->term_id;
                     $wpdb->update(
                         $wpdb->term_taxonomy,
                         [
-                            'parent' => $parentCategory->term_id
+                            'parent' => $parentId
                         ],
                         ['term_id' => $termId]
                     );
@@ -90,13 +91,19 @@ class WooCommerceCategoryManager
                 $termId = $wpdb->insert_id;
 
                 // Insert into term_taxonomy
+                if($parentCategory == null){
+                    $parentId = 0;
+                }
+                else{
+                    $parentId = (int)$parentCategory->term_id;
+                }
                 $wpdb->insert(
                     $wpdb->term_taxonomy,
                     [
                         'term_id' => $termId,
                         'taxonomy' => 'product_cat',
                         'description' => '',
-                        'parent' => $parentCategory->term_id,
+                        'parent' => $parentId,
                         'count' => 0
                     ]
                 );
