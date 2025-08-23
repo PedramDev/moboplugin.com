@@ -86,9 +86,9 @@ function mobo_core_sync_page() {
         $catFunc = new \MoboCore\WooCommerceCategoryManager();
         $catFunc->addOrUpdateAllCategories($categoriesDataJson);
 
-        // if (!wp_next_scheduled('mobo_core_sync_products_event')) {
-        //     wp_schedule_event(time(), 'mobo_core_interval', 'mobo_core_sync_products_event');
-        // }
+        if (!wp_next_scheduled('mobo_core_sync_products_event')) {
+            wp_schedule_event(time(), 'mobo_core_interval', 'mobo_core_sync_products_event');
+        }
     }
     ?>
         <p>

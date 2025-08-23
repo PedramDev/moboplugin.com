@@ -15,6 +15,7 @@ class WooCommerceCategoryManager
             // echo "ID: {$item['id']}, Title: {$item['title']}, URL: {$item['url']}\n";
             $result = $this->addOrUpdateCategory($item);
         }
+        clean_taxonomy_cache('product_cat');
     }
 
 
