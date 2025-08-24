@@ -8,12 +8,6 @@ if (!defined('ABSPATH')) {
 // Admin page function
 function mobo_core_admin_page() {
 
-    $global_product_auto_stock= get_option('global_product_auto_stock');
-    $global_product_auto_price= get_option('global_product_auto_price');
-    $global_product_auto_title= get_option('global_product_auto_title');
-    $global_product_auto_caption = get_option('global_product_auto_caption');
-    $global_additional_price = get_option('global_additional_price');
-
 
     $apiFunc = new \MoboCore\ApiFunctions();
     $get_ip =  $apiFunc->get_ip();
@@ -27,21 +21,27 @@ function mobo_core_admin_page() {
         update_option('global_additional_price', trim($_POST['global_additional_price']));
 
 
-        $global_product_auto_stock = isset($_POST['global_product_auto_stock']) ? '0' : '1';
-        $global_product_auto_price = isset($_POST['global_product_auto_price']) ? '0' : '1';
-        $global_product_auto_title = isset($_POST['global_product_auto_title']) ? '0' : '1';
-        $global_product_auto_caption = isset($_POST['global_product_auto_caption']) ? '0' : '1';
+        $global_product_auto_stock = $_POST['global_product_auto_stock'];
+        $global_product_auto_price =   $_POST['global_product_auto_price'];
+        $global_product_auto_title =   $_POST['global_product_auto_title'];
+        $global_product_auto_caption = $_POST['global_product_auto_caption'];
 
         update_option('global_product_auto_stock', $global_product_auto_stock);
         update_option('global_product_auto_price', $global_product_auto_price);
         update_option('global_product_auto_title', $global_product_auto_title);
         update_option('global_product_auto_caption', $global_product_auto_caption);
 
-        // Optional: Add an admin notice
-        add_action('admin_notices', function() {
-            echo '<div class="updated"><p>تنظیمات موبوکور ذخیره شده</p></div>';
-        });
-    }
+        $message = '<div class="updated"><p>تنظیمات موبوکور ذخیره شده</p></div>';
+        }
+    
+        $global_product_auto_stock= get_option('global_product_auto_stock');
+        $global_product_auto_price= get_option('global_product_auto_price');
+        $global_product_auto_title= get_option('global_product_auto_title');
+        $global_product_auto_caption = get_option('global_product_auto_caption');
+        $global_additional_price = get_option('global_additional_price');
+
+
+        
     ?>
 
     <div class="wrap" style="
@@ -55,6 +55,8 @@ function mobo_core_admin_page() {
                             gap: 20px;
                             max-width: 500px;">
 
+
+            <?php echo $message; ?>
             <p>
                 برای دریافت لایسنس این آی پی را باید توحیل پشتیبانی دهید:
                 <br />

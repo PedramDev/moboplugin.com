@@ -6,6 +6,14 @@ if (!defined('ABSPATH')) {
 }
 // https://mobomobo.ir/admin/store/products/159500255
 
+function mobo_core_sync_categories(){
+        $apiFunc = new \MoboCore\ApiFunctions();
+
+        $categoriesDataJson = $apiFunc->getCategoriesAsJson();
+        $catFunc = new \MoboCore\WooCommerceCategoryManager();
+        $catFunc->addOrUpdateAllCategories($categoriesDataJson);
+}
+
 function mobo_core_sync_products() {
     $apiFunc = new \MoboCore\ApiFunctions(); // Replace with your API function class
     $productFunc = new \MoboCore\WooCommerceProductManager(); // Replace with your product function class
@@ -63,6 +71,7 @@ function mobo_core_sync_products() {
 }
 
 add_action('mobo_core_sync_products_event', 'mobo_core_sync_products');
+add_action('mobo_core_sync_categories_event', 'mobo_core_sync_categories');
 
 // Admin page function
 function mobo_core_sync_page() {
@@ -87,7 +96,12 @@ function mobo_core_sync_page() {
         $catFunc->addOrUpdateAllCategories($categoriesDataJson);
 
         if (!wp_next_scheduled('mobo_core_sync_products_event')) {
-            wp_schedule_event(time(), 'mobo_core_interval', 'mobo_core_sync_products_event');
+            wp_schedule_event(time(), 'mobo_core_product_interval', 'mobo_core_sync_products_event');
+        }
+
+        
+        if (!wp_next_scheduled('mobo_core_sync_categories_event')) {
+            wp_schedule_event(time(), 'mobo_core_categories_interval', 'mobo_core_sync_categories_event');
         }
     }
     ?>

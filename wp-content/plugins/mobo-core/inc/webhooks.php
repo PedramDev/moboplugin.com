@@ -9,13 +9,15 @@ add_action('rest_api_init', function () {
 
 function mobo_core_webhook_handler(WP_REST_Request $request) {
 
-    $security_code = $request->get_header('securityCode');
+    $data = $request->get_json_params();
+    $security_code = $data['securityCode'];
 
     // Define your expected secret code
     $expected_secret_code = get_option('mobo_core_security_code');
 
     if ($security_code !== $expected_secret_code) {
         return new WP_REST_Response('Unauthorized', 401);
+        exit;
     }
     $productFunc = new \MoboCore\WooCommerceProductManager(); // Replace with your product function class
 
@@ -24,9 +26,9 @@ function mobo_core_webhook_handler(WP_REST_Request $request) {
     // Handle the request data
     $data = $request->get_json_params();
     // Process the data...
-    switch($data['event']){
+    switch($data['type']){
         case 'ProductUpdated';
-            $productFunc->update_product($data['data']);
+            $productFunc->webhook_update_product($data);
             break;
         case 'UpdateCategory';
             $apiFunc = new \MoboCore\ApiFunctions();
@@ -45,4 +47,5 @@ function mobo_core_webhook_handler(WP_REST_Request $request) {
 
     
     return new WP_REST_Response('Success', 200);
+    exit;
 }

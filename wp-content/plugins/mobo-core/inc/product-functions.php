@@ -116,17 +116,24 @@ class WooCommerceProductManager
             $product->set_slug($product_url);
             $image_ids = $product->get_gallery_image_ids();
 
+            global $wpdb;
             // Handle images
             if (!empty($images)) {
                 $image_ids = [];
                 foreach ($images as $image) {
+
+                    $query = $wpdb->prepare(
+                        "SELECT count(*) Count FROM {$wpdb->postmeta} WHERE meta_key = 'img_guid' AND meta_value = %s",
+                        $image['id']
+                    );
+                    $isImgExist = $wpdb->get_var($query);
                     //if image not exist add it
-                    if (\get_post_meta($image['id'], 'img_guid', true) != $image['id']) {
+                    if ($isImgExist == 0) {
                         $image_id = self::upload_image($image['url']);
                         if ($image_id) {
                             $image_ids[] = $image_id;
                             // Store GUID for the image
-                            \update_post_meta($image_id, 'img_guid', $image['id']);
+                            \add_post_meta($image_id, 'img_guid', $image['id']);
                         }
                     }
                 }
@@ -267,11 +274,11 @@ class WooCommerceProductManager
 
     public function remove_product($data)
     {
-        if (empty($data) || !isset($data['productId'])) {
+        if (empty($data) || !isset($data['listOfId'])) {
             return 'Invalid JSON data';
         }
 
-        $ids = $data['productId'];
+        $ids = $data['listOfId'];
 
         // Ensure $ids is an array
         if (!is_array($ids)) {
@@ -419,14 +426,14 @@ class WooCommerceProductManager
                 $product = new \WC_Product_Variable();
             }
 
-            if ($auto_options['global_product_auto_title']) {
+            if ($auto_options['global_product_auto_title'] == '1') {
                 $product->set_name($title);
             }
-            if ($auto_options['global_product_auto_caption']) {
+            if ($auto_options['global_product_auto_caption'] == '1') {
                 $product->set_description($caption ?? '');
             }
 
-            if ($auto_options['global_product_auto_price']) {
+            if ($auto_options['global_product_auto_price'] == '1') {
                 $product->set_regular_price($price);
                 if (isset($comparePrice)) {
                     $product->set_sale_price($comparePrice);
@@ -434,7 +441,7 @@ class WooCommerceProductManager
             } else {
             }
 
-            if ($auto_options['global_product_auto_stock']) {
+            if ($auto_options['global_product_auto_stock'] == '1') {
                 $product->set_manage_stock(true);
                 $product->set_stock_quantity($stock);
             }
@@ -442,18 +449,26 @@ class WooCommerceProductManager
             $product->set_category_ids($wp_category_ids);
             $product->set_slug($product_url);
             $image_ids = $product->get_gallery_image_ids();
-
+            
+            global $wpdb;
             // Handle images
             if (!empty($images)) {
                 $image_ids = [];
                 foreach ($images as $image) {
                     //if image not exist add it
-                    if (\get_post_meta($image['id'], 'img_guid', true) != $image['id']) {
+                    $query = $wpdb->prepare(
+                        "SELECT count(*) Count FROM {$wpdb->postmeta} WHERE meta_key = 'img_guid' AND meta_value = %s",
+                        $image['id']
+                    );
+                    $isImgExist = $wpdb->get_var($query);
+
+                    //if image not exist add it
+                    if ($isImgExist == 0) {
                         $image_id = self::upload_image($image['url']);
                         if ($image_id) {
                             $image_ids[] = $image_id;
                             // Store GUID for the image
-                            \update_post_meta($image_id, 'img_guid', $image['id']);
+                            \add_post_meta($image_id, 'img_guid', $image['id']);
                         }
                     }
                 }
@@ -514,7 +529,7 @@ class WooCommerceProductManager
 
 
                 // Set variant details
-                if ($auto_options['global_product_auto_price']) {
+                if ($auto_options['global_product_auto_price']=='1') {
                     $additional_price = get_post_meta($variation_id, 'mobo_additional_price', true);
 
                     if (isset($additional_price) && !empty($additional_price)) {
@@ -538,7 +553,7 @@ class WooCommerceProductManager
                     }
                 }
 
-                if ($auto_options['global_product_auto_stock']) {
+                if ($auto_options['global_product_auto_stock']=='1') {
                     $variation->set_stock_quantity($variant['stock']);
                     $variation->set_manage_stock(true);
                     $variation->set_stock_status($variant['stock'] > 0 ? 'instock' : 'outofstock');
