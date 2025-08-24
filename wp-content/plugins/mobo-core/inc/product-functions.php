@@ -138,7 +138,9 @@ class WooCommerceProductManager
                     }
                 }
                 $product->set_gallery_image_ids($image_ids);
-                $product->set_image_id($image_ids[0]);
+                if(!empty($image_ids)){
+                    $product->set_image_id($image_ids[0]);
+                }
             }
 
             // Save the product
