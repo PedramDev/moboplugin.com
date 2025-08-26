@@ -110,7 +110,6 @@ class WooCommerceProductManager
                 }
             }
 
-            $globSimpleVal = intval($auto_options['mobo_additional_price_simple']);
             $globVal = intval($auto_options['global_additional_price']);
             if ($existing_products) {
                 if ($auto_options['global_product_auto_title'] == '1') {
@@ -138,11 +137,11 @@ class WooCommerceProductManager
                 if (isset($additional_product_price) && !empty($additional_product_price)) {
                     $additional_product_price = intval($additional_product_price);
 
-                    if (isset($data['comparePrice'])) {
-                        $product->set_regular_price(intval($data['comparePrice']) + $additional_product_price);
-                        $product->set_sale_price(intval($data['price']) + $additional_product_price);
+                    if (isset($comparePrice)) {
+                        $product->set_regular_price(intval($comparePrice) + $additional_product_price);
+                        $product->set_sale_price(intval($price) + $additional_product_price);
                     } else {
-                        $product->set_regular_price(intval($data['price']) + $additional_product_price);
+                        $product->set_regular_price(intval($price) + $additional_product_price);
                         $product->set_sale_price('');
                     }
                 }
@@ -166,12 +165,15 @@ class WooCommerceProductManager
                 $product->set_manage_stock(true);
                 $product->set_stock_quantity($stock);
 
-                if (isset($data['comparePrice'])) {
-                    $product->set_regular_price(intval($data['comparePrice']) + $globSimpleVal);
-                    $product->set_sale_price(intval($data['price']) + $globSimpleVal);
-                } else {
-                    $product->set_regular_price(intval($data['price']) + $globSimpleVal);
-                    $product->set_sale_price('');
+                 if ($auto_options['global_product_auto_price'] == '1') {
+
+                    if (isset($comparePrice)) {
+                        $product->set_regular_price(intval($comparePrice) + $globVal);
+                        $product->set_sale_price(intval($price) + $globVal);
+                    } else {
+                        $product->set_regular_price(intval($price) + $globVal);
+                        $product->set_sale_price('');
+                    }
                 }
             }
 
@@ -270,8 +272,8 @@ class WooCommerceProductManager
                     // Set variant details
                     $globVal = intval($auto_options['global_additional_price']);
                     if ($auto_options['global_product_auto_price'] == '1') {
-                        if (isset($variation_id)) {
-                            $additional_price = get_post_meta($variation_id, 'mobo_additional_price', true);
+                        if (isset($existing_variant_id)) {
+                            $additional_price = get_post_meta($existing_variant_id, 'mobo_additional_price', true);
                             if (isset($additional_price) && !empty($additional_price)) {
                                 $additional_price = intval($additional_price);
 
@@ -301,7 +303,7 @@ class WooCommerceProductManager
                             }
                         }
                     } else {
-                        if (!isset($variation_id)) {
+                        if (!isset($existing_variant_id)) {
 
                             if (isset($variant['comparePrice'])) {
                                 $variation->set_regular_price(intval($variant['comparePrice']) + $globVal);
@@ -313,7 +315,7 @@ class WooCommerceProductManager
                         }
                     }
 
-                    if (isset($variation_id)) {
+                    if (isset($existing_variant_id)) {
                         if ($auto_options['global_product_auto_stock'] == '1') {
                             $variation->set_stock_quantity($variant['stock']);
                             $variation->set_manage_stock(true);
@@ -556,7 +558,6 @@ class WooCommerceProductManager
                 }
             }
 
-            $globSimpleVal = intval($auto_options['mobo_additional_price_simple']);
             $globVal = intval($auto_options['global_additional_price']);
             if ($existing_products) {
                 if ($auto_options['global_product_auto_title'] == '1') {
@@ -581,11 +582,11 @@ class WooCommerceProductManager
                 if (isset($additional_product_price) && !empty($additional_product_price)) {
                     $additional_product_price = intval($additional_product_price);
 
-                    if (isset($data['comparePrice'])) {
-                        $product->set_regular_price(intval($data['comparePrice']) + $additional_product_price);
-                        $product->set_sale_price(intval($data['price']) + $additional_product_price);
+                    if (isset($comparePrice)) {
+                        $product->set_regular_price(intval($comparePrice) + $additional_product_price);
+                        $product->set_sale_price(intval($price) + $additional_product_price);
                     } else {
-                        $product->set_regular_price(intval($data['price']) + $additional_product_price);
+                        $product->set_regular_price(intval($price) + $additional_product_price);
                         $product->set_sale_price('');
                     }
                 }
@@ -609,12 +610,22 @@ class WooCommerceProductManager
                 $product->set_manage_stock(true);
                 $product->set_stock_quantity($stock);
                 
-                if (isset($data['comparePrice'])) {
-                    $product->set_regular_price(intval($data['comparePrice']) + $globSimpleVal);
-                    $product->set_sale_price(intval($data['price']) + $globSimpleVal);
+                if (isset($comparePrice)) {
+                    $product->set_regular_price(intval($comparePrice) + $globVal);
+                    $product->set_sale_price(intval($price) + $globVal);
                 } else {
-                    $product->set_regular_price(intval($data['price']) + $globSimpleVal);
+                    $product->set_regular_price(intval($price) + $globVal);
                     $product->set_sale_price('');
+                }
+                if ($auto_options['global_product_auto_price'] == '1') {
+
+                    if (isset($comparePrice)) {
+                        $product->set_regular_price(intval($comparePrice) + $globVal);
+                        $product->set_sale_price(intval($price) + $globVal);
+                    } else {
+                        $product->set_regular_price(intval($price) + $globVal);
+                        $product->set_sale_price('');
+                    }
                 }
             }
 
@@ -715,8 +726,8 @@ class WooCommerceProductManager
 
                     // Set variant details
                     if ($auto_options['global_product_auto_price'] == '1') {
-                        if (isset($variation_id)) {
-                            $additional_price = get_post_meta($variation_id, 'mobo_additional_price', true);
+                        if (isset($existing_variant_id)) {
+                            $additional_price = get_post_meta($existing_variant_id, 'mobo_additional_price', true);
                             if (isset($additional_price) && !empty($additional_price)) {
                                 $additional_price = intval($additional_price);
 
@@ -738,7 +749,7 @@ class WooCommerceProductManager
                             }
                         }
                     } else {
-                        if (!isset($variation_id)) {
+                        if (!isset($existing_variant_id)) {
 
                             if (isset($variant['comparePrice'])) {
                                 $variation->set_regular_price(intval($variant['comparePrice']) + $globVal);
@@ -751,7 +762,7 @@ class WooCommerceProductManager
                     }
 
 
-                    if (isset($variation_id)) {
+                    if (isset($existing_variant_id)) {
                         if ($auto_options['global_product_auto_stock'] == '1') {
                             $variation->set_stock_quantity($variant['stock']);
                             $variation->set_manage_stock(true);
