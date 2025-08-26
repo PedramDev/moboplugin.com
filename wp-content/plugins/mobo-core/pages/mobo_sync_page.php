@@ -21,7 +21,7 @@ function mobo_core_sync_products()
     $productFunc = new \MoboCore\WooCommerceProductManager(); // Replace with your product function class
 
     // Retrieve stored values
-    $page = intval(get_option('mobo_sync_page', 1));
+    $page = 1;//intval(get_option('mobo_sync_page', 1));
     $productLeft = get_option('mobo_sync_product_left', null);
     $pageSize = 5;
 

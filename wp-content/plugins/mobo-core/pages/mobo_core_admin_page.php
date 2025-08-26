@@ -14,6 +14,7 @@ function mobo_core_admin_page() {
 
 
     // Check if the form is submitted
+    $message = '';
     if (isset($_POST['save_mobo_core_settings'])) {
         update_option('mobo_core_token', trim($_POST['token']));
         update_option('mobo_core_security_code', trim($_POST['SecurityCode']));
@@ -21,10 +22,10 @@ function mobo_core_admin_page() {
         update_option('global_additional_price', trim($_POST['global_additional_price']));
 
 
-        $global_product_auto_stock = $_POST['global_product_auto_stock'];
-        $global_product_auto_price =   $_POST['global_product_auto_price'];
-        $global_product_auto_title =   $_POST['global_product_auto_title'];
-        $global_product_auto_caption = $_POST['global_product_auto_caption'];
+        $global_product_auto_stock = isset($_POST['global_product_auto_stock']) ? 0 : 1;
+        $global_product_auto_price =   isset($_POST['global_product_auto_price']) ? 0 : 1;
+        $global_product_auto_title =   isset($_POST['global_product_auto_title']) ? 0 : 1;
+        $global_product_auto_caption = isset($_POST['global_product_auto_caption']) ? 0 : 1;
 
         update_option('global_product_auto_stock', $global_product_auto_stock);
         update_option('global_product_auto_price', $global_product_auto_price);

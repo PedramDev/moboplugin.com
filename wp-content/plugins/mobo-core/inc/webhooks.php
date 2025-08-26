@@ -4,6 +4,7 @@ add_action('rest_api_init', function () {
     register_rest_route('mobo-core/v1', '/webhook', array(
         'methods' => 'POST',
         'callback' => 'mobo_core_webhook_handler',
+        'permission_callback' => '__return_true'
     ));
 });
 
