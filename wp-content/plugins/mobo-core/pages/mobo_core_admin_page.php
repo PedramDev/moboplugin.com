@@ -8,31 +8,25 @@ if (!defined('ABSPATH')) {
 // Admin page function
 function mobo_core_admin_page() {
 
-
-    $apiFunc = new \MoboCore\ApiFunctions();
-    $get_ip =  $apiFunc->get_ip();
-
-
     // Check if the form is submitted
     $message = '';
     if (isset($_POST['save_mobo_core_settings'])) {
-        update_option('mobo_core_token', trim($_POST['token']));
-        update_option('mobo_core_security_code', trim($_POST['SecurityCode']));
+            update_option('mobo_core_token', trim($_POST['token']));
+            update_option('mobo_core_security_code', trim($_POST['SecurityCode']));
 
-        update_option('global_additional_price', trim($_POST['global_additional_price']));
+            update_option('global_additional_price', trim($_POST['global_additional_price']));
 
+            $global_product_auto_stock = isset($_POST['global_product_auto_stock']) ? 1 : 0;
+            $global_product_auto_price =   isset($_POST['global_product_auto_price']) ? 1 : 0;
+            $global_product_auto_title =   isset($_POST['global_product_auto_title']) ? 1 : 0;
+            $global_product_auto_caption = isset($_POST['global_product_auto_caption']) ? 1 : 0;
 
-        $global_product_auto_stock = isset($_POST['global_product_auto_stock']) ? 0 : 1;
-        $global_product_auto_price =   isset($_POST['global_product_auto_price']) ? 0 : 1;
-        $global_product_auto_title =   isset($_POST['global_product_auto_title']) ? 0 : 1;
-        $global_product_auto_caption = isset($_POST['global_product_auto_caption']) ? 0 : 1;
+            update_option('global_product_auto_stock', $global_product_auto_stock);
+            update_option('global_product_auto_price', $global_product_auto_price);
+            update_option('global_product_auto_title', $global_product_auto_title);
+            update_option('global_product_auto_caption', $global_product_auto_caption);
 
-        update_option('global_product_auto_stock', $global_product_auto_stock);
-        update_option('global_product_auto_price', $global_product_auto_price);
-        update_option('global_product_auto_title', $global_product_auto_title);
-        update_option('global_product_auto_caption', $global_product_auto_caption);
-
-        $message = '<div class="updated"><p>تنظیمات موبوکور ذخیره شده</p></div>';
+            $message = '<div class="updated"><p>تنظیمات موبوکور ذخیره شده</p></div>';
         }
     
         $global_product_auto_stock= get_option('global_product_auto_stock');
@@ -58,11 +52,6 @@ function mobo_core_admin_page() {
 
 
             <?php echo $message; ?>
-            <p>
-                برای دریافت لایسنس این آی پی را باید توحیل پشتیبانی دهید:
-                <br />
-                IP: <code><?php echo $get_ip; ?></code>
-            </p>
 
 
             <label for="token">Token:</label>
