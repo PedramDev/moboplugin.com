@@ -2,7 +2,7 @@
 
 namespace MoboCore;
 
-require 'helper.php';
+require  __DIR__ . '/helper.php';
 
 class WooCommerceCategoryManager
 {

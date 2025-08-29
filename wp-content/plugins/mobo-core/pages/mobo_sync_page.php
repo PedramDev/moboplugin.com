@@ -77,6 +77,7 @@ add_action('mobo_core_sync_categories_event', 'mobo_core_sync_categories');
 // Admin page function
 function mobo_core_sync_page()
 {
+    $pageSize = 5;
 
     $apiFunc = new \MoboCore\ApiFunctions(); // Replace with your API function class
     $info = $apiFunc->getLicenseInfo();
@@ -115,8 +116,9 @@ function mobo_core_sync_page()
             }
         }
 
-        $pageLeft = ($productLeft % $page);
-        if($productLeft % $page != 0){
+        $productLeft = intval($productLeft);
+        $pageLeft = (($productLeft / $pageSize) - $page);
+        if(intval($productLeft) % $page != 0){
             $pageLeft++;
         }
 
@@ -127,9 +129,9 @@ function mobo_core_sync_page()
             <?php echo $info['timeLeft']; ?>
         </p>
         <p>
-            تعداد همگام سازی شده : <?php echo $page; ?> از <?php echo $pageLeft; ?>
+            تعداد همگام سازی شده : <?php echo $page; ?> از <?php echo ($pageLeft + $page); ?>
             <br />
-            زمان تقریبی پایان همگام سازی : <?php echo ($pageLeft * 30);  ?> ثانیه دیگر
+            زمان تقریبی پایان همگام سازی : <?php echo ($pageLeft * 30) / 60;  ?> دقیقه دیگر
         </p>
 
         <form method="post" action="">

@@ -360,6 +360,44 @@ class WooCommerceProductManager
         return 'Products updated successfully';
     }
 
+    function fetch_image_data($url) {
+        // Check if allow_url_fopen is enabled
+        if (ini_get('allow_url_fopen')) {
+            $image_data = @file_get_contents($url);
+            
+            if ($image_data === false) {
+                // Handle error for file_get_contents
+                return 'Error fetching image using file_get_contents: ' . error_get_last()['message'];
+            }
+        } else {
+            // Fall back to cURL if allow_url_fopen is disabled
+            $image_data = self::fetch_image_with_curl($url);
+            if (is_string($image_data)) {
+                return $image_data; // Return error from cURL
+            }
+        }
+
+        return $image_data; // Return the fetched image data
+    }
+
+    function fetch_image_with_curl($url) {
+        $ch = curl_init();
+        
+        // Set cURL options
+        curl_setopt($ch, CURLOPT_URL, $url);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        
+        $image_data = curl_exec($ch);
+        
+        if ($image_data === false) {
+            // Handle cURL error
+            return 'Error fetching image using cURL: ' . curl_error($ch);
+        }
+        
+        curl_close($ch);
+        return $image_data; // Return the image data
+    }
+
     private function upload_image($image_url)
     {
         // Ensure the URL is valid
@@ -371,7 +409,7 @@ class WooCommerceProductManager
 
 
             $upload_dir = \wp_upload_dir();
-            $image_data = \file_get_contents($image_url);
+            $image_data = self::fetch_image_data($image_url);
             $filename = \basename($image_url);
 
             // Check if the image was successfully retrieved
