@@ -111,7 +111,7 @@ function mobo_core_sync_page()
                 }
             } else if (isset($_POST['mobo_core_update_setting'])) {
                 check_admin_referer('mobo_core_update_setting_nounce');
-                $page = $_POST['page'];
+                $page = intval($_POST['page']);
                 update_option('mobo_sync_page', $page);
             }
         }
