@@ -16,9 +16,9 @@ class ApiFunctions
                 'Token' => $token,
             ],
         ];
-        
+
         // Make a GET request
-        $response = \wp_remote_get($url,$args);
+        $response = \wp_remote_get($url, $args);
 
         // Check for errors
         if (\is_wp_error($response)) {
@@ -34,13 +34,14 @@ class ApiFunctions
         if ($data === null) {
             return false;
         }
-        
+
         return $data; // Return the data or process it as needed
     }
 
-    public function getProductsCount(){
+    public function getProductsCount()
+    {
         $token = get_option('mobo_core_token');
-        
+
         // Set up the headers
         $args = [
             'headers' => [
@@ -49,7 +50,7 @@ class ApiFunctions
         ];
 
         // Make a GET request
-        $response = \wp_remote_get($this->base_url . 'get-products-count',$args);
+        $response = \wp_remote_get($this->base_url . 'get-products-count', $args);
 
         // Check for errors
         if (is_wp_error($response)) {
@@ -62,25 +63,29 @@ class ApiFunctions
         return $body;
     }
 
-    public function getProductsAsJson($pageNumber,$recordPerPage){
-        $productsArray = $this->fetch_data_from_api($this->base_url . "get-products?PageNumber=$pageNumber&RecordPerPage=$recordPerPage");
+    public function getProductsAsJson($pageNumber, $recordPerPage, $onlyInStock)
+    {
+        $productsArray = $this->fetch_data_from_api($this->base_url . "get-products?PageNumber=$pageNumber&RecordPerPage=$recordPerPage&onlyInStock=$onlyInStock");
         return $productsArray;
     }
-    
-    public function getCategoriesAsJson(){
+
+    public function getCategoriesAsJson()
+    {
         $categoriesArray = $this->fetch_data_from_api($this->base_url . 'get-categories');
         return $categoriesArray;
     }
 
 
-    public function getLicenseInfo(){
+    public function getLicenseInfo()
+    {
         $info = $this->fetch_data_from_api($this->base_url . 'LicenseInfo');
         return $info;
     }
 
-    
-    public function get_ip(){
-        
+
+    public function get_ip()
+    {
+
         // Make a GET request
         $response = \wp_remote_get($this->base_url . 'get-ip');
 
