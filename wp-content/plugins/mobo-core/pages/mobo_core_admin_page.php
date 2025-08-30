@@ -8,7 +8,7 @@ if (!defined('ABSPATH')) {
 // Admin page function
 function mobo_core_admin_page()
 {
-    $max_dynamic = 1;
+    $max_dynamic = 5;
     // Check if the form is submitted
     $message = '';
     if (isset($_POST['save_mobo_core_settings'])) {
@@ -51,7 +51,7 @@ function mobo_core_admin_page()
         $mobo_price_type = trim($_POST['mobo_price_type']);
 
 
-        update_option('global_additional_price',$global_additional_price );
+        update_option('global_additional_price', $global_additional_price);
         update_option('global_additional_percentage', $global_additional_percentage);
         update_option('mobo_price_type', $mobo_price_type);
 
@@ -60,13 +60,13 @@ function mobo_core_admin_page()
 
         // switch ($mobo_price_type) {
         //     case 'static-price':
-                
+
         //         break;
         //     case 'static-percentage':
-                
+
         //         break;
         //     case 'dynamic-price':
-                
+
         //         break;
         // }
 
@@ -78,7 +78,8 @@ function mobo_core_admin_page()
                 'low' => 0,
                 'high' => 100_000,
                 'benefit_type' => 'static',
-                'benefit' => 20_000
+                'benefit' => 20_000,
+                'is_active' => false
             ];
         }
 
@@ -88,7 +89,7 @@ function mobo_core_admin_page()
 
         $persisted_dynamic_condition = get_option('mobo_dynamic_price');
         if ($persisted_dynamic_condition != false) {
-            $dynamic_condition = json_decode($persisted_dynamic_condition,true);
+            $dynamic_condition = json_decode($persisted_dynamic_condition, true);
         }
     }
 
@@ -216,10 +217,21 @@ function mobo_core_admin_page()
                 </div>
                 <div id="dynamic-price" class="price-mode mobo_input_group <?php if ($mobo_price_type != "dynamic-price") echo 'd-none'; ?>">
                     <?php
-                    for ($i = 0; $i < 1; $i++) {
+                    for ($i = 0; $i < $max_dynamic; $i++) {
                     ?>
 
                         <div style="border: 1px dashed #3e3e3e; padding:10px;margin:10px">
+
+                            <div class="mobo_input_group">
+                                <label>
+                                    <input type="radio" name="dynamic_condition[<?php echo $i ?>][is_active]" value="true" <?php if ($dynamic_condition[$i]['is_active'] == "true") echo 'checked'; ?>> فعال<br>
+                                </label>
+                                <label>
+                                    <input type="radio" name="dynamic_condition[<?php echo $i ?>][is_active]" value="false" <?php if ($dynamic_condition[$i]['is_active'] == "false") echo 'checked'; ?>> غیرفعال<br>
+                                </label>
+                            </div>
+                            <br />
+
                             <div class="mobo_input_group">
                                 <label for="dynamic_condition[<?php echo $i ?>][low]">
                                     حداقل قیمت:

@@ -372,7 +372,7 @@ class WooCommerceProductManager
             case 'dynamic-price':
 
                 foreach ($dynamic_condition as $condition) {
-                    if ($price >= $condition['low'] && $price <= $condition['high']) {
+                    if ($condition['is_active'] == 'true' && $price >= $condition['low'] && $price <= $condition['high']) {
                         if ($condition['benefit_type'] == 'static') {
                             $product->set_regular_price(intval($price) + $condition['benefit']);
                             $product->set_sale_price('');
@@ -411,7 +411,7 @@ class WooCommerceProductManager
             case 'dynamic-price':
 
                 foreach ($dynamic_condition as $condition) {
-                    if ($price >= $condition['low'] && $price <= $condition['high']) {
+                    if ($condition['is_active'] == 'true' && $price >= $condition['low'] && $price <= $condition['high']) {
                         if ($condition['benefit_type'] == 'static') {
                             $product->set_regular_price(intval($comparePrice) + $condition['benefit']);
                             $product->set_sale_price(intval($price) + $condition['benefit']);
@@ -516,8 +516,7 @@ class WooCommerceProductManager
 
     private function set_variant_details($existing_variant_id, $variation, $variant, $auto_options)
     {
-        $globVal = intval($auto_options['global_additional_price']);
-        $this->set_variant_prices($existing_variant_id, $variation, $variant, $globVal, $auto_options);
+        $this->set_variant_prices($existing_variant_id, $variation, $variant, $auto_options);
 
         if ($variant['stock'] == null) {
             $variation->set_stock_quantity(9999);
@@ -536,7 +535,7 @@ class WooCommerceProductManager
         $variation->update_meta_data('variant_guid', $variant['variantId']);
     }
 
-    private function set_variant_prices($existing_variant_id, $variation, $variant, $globVal, $auto_options)
+    private function set_variant_prices($existing_variant_id, $variation, $variant, $auto_options)
     {
         $auto_compare = $auto_options['global_product_auto_compare_price'];
 
@@ -576,7 +575,7 @@ class WooCommerceProductManager
                 case 'dynamic-price':
 
                     foreach ($dynamic_condition as $condition) {
-                        if ($price >= $condition['low'] && $price <= $condition['high']) {
+                        if ($condition['is_active'] == 'true' && $price >= $condition['low'] && $price <= $condition['high']) {
                             if ($condition['benefit_type'] == 'static') {
                                 $variation->set_regular_price(intval($price) + $condition['benefit']);
                                 $variation->set_sale_price('');
