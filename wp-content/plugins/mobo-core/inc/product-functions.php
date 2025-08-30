@@ -324,8 +324,6 @@ class WooCommerceProductManager
 
     private function set_product_details($product, $isNew, $product_url, $title, $caption, $price, $comparePrice, $stock, $auto_options, $wp_category_ids)
     {
-        $globVal = intval($auto_options['global_additional_price']);
-
         if ($isNew || $auto_options['global_product_auto_title'] == '1') {
             $product->set_name($title);
         }
@@ -337,7 +335,7 @@ class WooCommerceProductManager
         }
 
         if ($isNew || $auto_options['global_product_auto_price'] == '1') {
-            $this->set_prices($product, $price, $comparePrice, $globVal, $auto_options);
+            $this->set_prices($product, $price, $comparePrice, $auto_options);
         }
 
         if ($isNew || $auto_options['global_product_auto_stock'] == '1') {
@@ -349,16 +347,94 @@ class WooCommerceProductManager
         $product->set_category_ids($wp_category_ids);
     }
 
-    private function set_prices($product, $price, $comparePrice, $globVal, $auto_options)
+
+    private function set_conditional_price_without_compare_price($product, $price, $auto_options)
+    {
+        $static_percentage = floatval('1.' . $auto_options['global_additional_percentage']);
+        $static_price = intval($auto_options['global_additional_price']);
+        $dynamic_condition = json_decode($auto_options['mobo_dynamic_price'], true);
+
+        $price_type = $auto_options['mobo_price_type'];
+
+        switch ($price_type) {
+            case 'static-price':
+
+                $product->set_regular_price(intval($price) + $static_price);
+                $product->set_sale_price('');
+
+                break;
+            case 'static-percentage':
+
+                $product->set_regular_price(intval($price) * $static_percentage);
+                $product->set_sale_price('');
+
+                break;
+            case 'dynamic-price':
+
+                foreach ($dynamic_condition as $condition) {
+                    if ($price >= $condition['low'] && $price <= $condition['high']) {
+                        if ($condition['benefit_type'] == 'static') {
+                            $product->set_regular_price(intval($price) + $condition['benefit']);
+                            $product->set_sale_price('');
+                        } else {
+                            $product->set_regular_price(intval($price) *  floatval('1.' . $condition['benefit']));
+                            $product->set_sale_price('');
+                        }
+                    }
+                }
+
+                break;
+        }
+    }
+
+    private function set_conditional_price_with_compare_price($product, $price, $comparePrice, $auto_options)
+    {
+        $static_percentage = floatval('1.' . $auto_options['global_additional_percentage']);
+        $static_price = intval($auto_options['global_additional_price']);
+        $dynamic_condition = json_decode($auto_options['mobo_dynamic_price'], true);
+
+        $price_type = $auto_options['mobo_price_type'];
+
+        switch ($price_type) {
+            case 'static-price':
+
+                $product->set_regular_price(intval($comparePrice) + $static_price);
+                $product->set_sale_price(intval($price) + $static_price);
+
+                break;
+            case 'static-percentage':
+
+                $product->set_regular_price(intval($comparePrice) * $static_percentage);
+                $product->set_sale_price(intval($price) * $static_percentage);
+
+                break;
+            case 'dynamic-price':
+
+                foreach ($dynamic_condition as $condition) {
+                    if ($price >= $condition['low'] && $price <= $condition['high']) {
+                        if ($condition['benefit_type'] == 'static') {
+                            $product->set_regular_price(intval($comparePrice) + $condition['benefit']);
+                            $product->set_sale_price(intval($price) + $condition['benefit']);
+                        } else {
+                            $product->set_regular_price(intval($comparePrice) * floatval('1.' . $condition['benefit']));
+                            $product->set_sale_price(intval($price) *  floatval('1.' . $condition['benefit']));
+                        }
+                    }
+                }
+
+                break;
+        }
+    }
+
+    private function set_prices($product, $price, $comparePrice, $auto_options)
     {
         $auto_compare = $auto_options['global_product_auto_compare_price'];
 
         if (isset($comparePrice) && $auto_compare == '1') {
-            $product->set_regular_price(intval($comparePrice) + $globVal);
-            $product->set_sale_price(intval($price) + $globVal);
+
+            self::set_conditional_price_with_compare_price($product, $price, $comparePrice, $auto_options);
         } else {
-            $product->set_regular_price(intval($price) + $globVal);
-            $product->set_sale_price('');
+            self::set_conditional_price_without_compare_price($product, $price, $auto_options);
         }
     }
 
@@ -464,6 +540,7 @@ class WooCommerceProductManager
     {
         $auto_compare = $auto_options['global_product_auto_compare_price'];
 
+
         $additional_price = get_post_meta($existing_variant_id, 'mobo_additional_price', true);
         if (isset($additional_price) && !empty($additional_price)) {
             $additional_price = intval($additional_price);
@@ -476,12 +553,41 @@ class WooCommerceProductManager
                 $variation->set_sale_price('');
             }
         } else {
-            if (isset($variant['comparePrice']) && $auto_compare == '1') {
-                $variation->set_regular_price(intval($variant['comparePrice']) + $globVal);
-                $variation->set_sale_price(intval($variant['price']) + $globVal);
-            } else {
-                $variation->set_regular_price(intval($variant['price']) + $globVal);
-                $variation->set_sale_price('');
+            $price = $variant['price'];
+            $static_percentage = floatval('1.' . $auto_options['global_additional_percentage']);
+            $static_price = intval($auto_options['global_additional_price']);
+            $dynamic_condition = json_decode($auto_options['mobo_dynamic_price'], true);
+
+            $price_type = $auto_options['mobo_price_type'];
+
+            switch ($price_type) {
+                case 'static-price':
+
+                    $variation->set_regular_price(intval($price) + $static_price);
+                    $variation->set_sale_price('');
+
+                    break;
+                case 'static-percentage':
+
+                    $variation->set_regular_price(intval($price) * $static_percentage);
+                    $variation->set_sale_price('');
+
+                    break;
+                case 'dynamic-price':
+
+                    foreach ($dynamic_condition as $condition) {
+                        if ($price >= $condition['low'] && $price <= $condition['high']) {
+                            if ($condition['benefit_type'] == 'static') {
+                                $variation->set_regular_price(intval($price) + $condition['benefit']);
+                                $variation->set_sale_price('');
+                            } else {
+                                $variation->set_regular_price(intval($price) *  floatval('1.' . $condition['benefit']));
+                                $variation->set_sale_price('');
+                            }
+                        }
+                    }
+
+                    break;
             }
         }
     }
@@ -493,8 +599,13 @@ class WooCommerceProductManager
             'global_product_auto_price',
             'global_product_auto_title',
             'global_product_auto_caption',
+            'global_product_auto_compare_price',
+            'global_product_auto_slug',
+
+            'mobo_price_type',
             'global_additional_price',
-            'global_product_auto_compare_price'
+            'global_additional_percentage',
+            'mobo_dynamic_price'
         ];
 
         $option_values = [];
