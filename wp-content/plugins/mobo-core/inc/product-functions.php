@@ -337,7 +337,7 @@ class WooCommerceProductManager
         }
 
         if ($isNew || $auto_options['global_product_auto_price'] == '1') {
-            $this->set_prices($product, $price, $comparePrice, $globVal,$auto_options);
+            $this->set_prices($product, $price, $comparePrice, $globVal, $auto_options);
         }
 
         if ($isNew || $auto_options['global_product_auto_stock'] == '1') {
@@ -349,7 +349,7 @@ class WooCommerceProductManager
         $product->set_category_ids($wp_category_ids);
     }
 
-    private function set_prices($product, $price, $comparePrice, $globVal,$auto_options)
+    private function set_prices($product, $price, $comparePrice, $globVal, $auto_options)
     {
         $auto_compare = $auto_options['global_product_auto_compare_price'];
 
@@ -441,14 +441,13 @@ class WooCommerceProductManager
     private function set_variant_details($existing_variant_id, $variation, $variant, $auto_options)
     {
         $globVal = intval($auto_options['global_additional_price']);
-        $this->set_variant_prices($existing_variant_id, $variation, $variant, $globVal,$auto_options);
+        $this->set_variant_prices($existing_variant_id, $variation, $variant, $globVal, $auto_options);
 
-        if($variant['stock'] == null){
+        if ($variant['stock'] == null) {
             $variation->set_stock_quantity(9999);
             $variation->set_manage_stock(true);
             $variation->set_stock_status('instock');
-        }
-        else{
+        } else {
             $variation->set_stock_quantity($variant['stock']);
             $variation->set_manage_stock(true);
             $variation->set_stock_status($variant['stock'] > 0 ? 'instock' : 'outofstock');
@@ -461,10 +460,10 @@ class WooCommerceProductManager
         $variation->update_meta_data('variant_guid', $variant['variantId']);
     }
 
-    private function set_variant_prices($existing_variant_id, $variation, $variant, $globVal,$auto_options)
+    private function set_variant_prices($existing_variant_id, $variation, $variant, $globVal, $auto_options)
     {
         $auto_compare = $auto_options['global_product_auto_compare_price'];
-        
+
         $additional_price = get_post_meta($existing_variant_id, 'mobo_additional_price', true);
         if (isset($additional_price) && !empty($additional_price)) {
             $additional_price = intval($additional_price);
