@@ -23,10 +23,15 @@ function mobo_core_admin_page()
         $global_product_auto_title =   isset($_POST['global_product_auto_title']) ? 1 : 0;
         $global_product_auto_caption = isset($_POST['global_product_auto_caption']) ? 1 : 0;
 
+        $global_product_auto_compare_price = isset($_POST['global_product_auto_compare_price']) ? 1 : 0;
+
+
         update_option('global_product_auto_stock', $global_product_auto_stock);
         update_option('global_product_auto_price', $global_product_auto_price);
         update_option('global_product_auto_title', $global_product_auto_title);
         update_option('global_product_auto_caption', $global_product_auto_caption);
+
+        update_option('global_product_auto_compare_price', $global_product_auto_compare_price);
 
         $message = '<div class="updated"><p>تنظیمات موبوکور ذخیره شده</p></div>';
     } else {
@@ -34,6 +39,9 @@ function mobo_core_admin_page()
         $global_product_auto_price = get_option('global_product_auto_price');
         $global_product_auto_title = get_option('global_product_auto_title');
         $global_product_auto_caption = get_option('global_product_auto_caption');
+
+        $global_product_auto_compare_price = get_option('global_product_auto_compare_price');
+
         $global_additional_price = get_option('global_additional_price');
     }
 
@@ -83,6 +91,9 @@ function mobo_core_admin_page()
             </label>
             <input type="text" style="font-family:'Courier New', Courier, monospace;" dir="ltr" name="global_additional_price" id="global_additional_price" value="<?php echo $global_additional_price; ?>" />
 
+            <label>
+                <input type="checkbox" name="global_product_auto_compare_price" value="1" <?php checked($global_product_auto_compare_price, '1'); ?>> اعمال تخفیف های موبو
+            </label>
 
             <input type="submit" name="save_mobo_core_settings" value="ذخیره تنظیمات" class="button button-primary" />
         </form>

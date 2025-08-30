@@ -56,6 +56,187 @@ class WooCommerceProductManager
         return null; // No categories found
     }
 
+
+    function fetch_image_data($url) {
+        // Check if allow_url_fopen is enabled
+        if (ini_get('allow_url_fopen')) {
+            $image_data = @file_get_contents($url);
+            
+            if ($image_data === false) {
+                // Handle error for file_get_contents
+                return 'Error fetching image using file_get_contents: ' . error_get_last()['message'];
+            }
+        } else {
+            // Fall back to cURL if allow_url_fopen is disabled
+            $image_data = self::fetch_image_with_curl($url);
+            if (is_string($image_data)) {
+                return $image_data; // Return error from cURL
+            }
+        }
+
+        return $image_data; // Return the fetched image data
+    }
+
+    function fetch_image_with_curl($url) {
+        $ch = curl_init();
+        
+        // Set cURL options
+        curl_setopt($ch, CURLOPT_URL, $url);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        
+        $image_data = curl_exec($ch);
+        
+        if ($image_data === false) {
+            // Handle cURL error
+            return 'Error fetching image using cURL: ' . curl_error($ch);
+        }
+        
+        curl_close($ch);
+        return $image_data; // Return the image data
+    }
+
+    private function upload_image($image_url)
+    {
+        // Ensure the URL is valid
+        if (\filter_var($image_url, FILTER_VALIDATE_URL)) {
+            if (! function_exists('wp_generate_attachment_metadata')) {
+                require_once ABSPATH . 'wp-admin/includes/image.php';
+            }
+
+
+
+            $upload_dir = \wp_upload_dir();
+            $image_data = self::fetch_image_data($image_url);
+            $filename = \basename($image_url);
+
+            // Check if the image was successfully retrieved
+            if ($image_data) {
+                $file_path = $upload_dir['path'] . '/' . $filename;
+                \file_put_contents($file_path, $image_data);
+
+                // Prepare the attachment
+                $wp_filetype = \wp_check_filetype($filename, null);
+                $attachment = [
+                    'post_mime_type' => $wp_filetype['type'],
+                    'post_title' => \sanitize_file_name($filename),
+                    'post_content' => '',
+                    'post_status' => 'inherit'
+                ];
+
+                // Insert the attachment into the media library
+                $attachment_id = \wp_insert_attachment($attachment, $file_path);
+                // Generate attachment metadata
+                $attach_data = \wp_generate_attachment_metadata($attachment_id, $file_path);
+                \wp_update_attachment_metadata($attachment_id, $attach_data);
+
+                return $attachment_id;
+            }
+        }
+        return false; // Return false if the image could not be uploaded
+    }
+
+    public function remove_product($data)
+    {
+        if (empty($data) || !isset($data['listOfId'])) {
+            return 'Invalid JSON data';
+        }
+
+        $ids = $data['listOfId'];
+
+        // Ensure $ids is an array
+        if (!is_array($ids)) {
+            $ids = [$ids]; // Convert to array if it's not
+        }
+
+        global $wpdb;
+
+        // Prepare the placeholders for the SQL query
+        $placeholders = implode(',', array_fill(0, count($ids), '%d'));
+
+        // Prepare and execute the SQL query to delete products
+        $query = $wpdb->prepare(
+            "DELETE FROM $wpdb->posts
+        WHERE ID IN (
+            SELECT ID FROM $wpdb->postmeta
+            WHERE meta_key = 'product_guid' AND meta_value IN ($placeholders)
+        ) AND post_type = 'product'",
+            ...$ids // Unpack the array into the query
+        );
+
+        // Execute the query
+        $deleted_rows = $wpdb->query($query);
+
+        return $deleted_rows ? "$deleted_rows products deleted." : 'No products found.';
+    }
+
+    public function remove_variant($data)
+    {
+        if (empty($data) || !isset($data['variantId'])) {
+            return 'Invalid JSON data';
+        }
+
+        $ids = $data['variantId'];
+
+        // Ensure $ids is an array
+        if (!is_array($ids)) {
+            $ids = [$ids]; // Convert to array if it's not
+        }
+
+        global $wpdb;
+
+        // Prepare the placeholders for the SQL query
+        $placeholders = implode(',', array_fill(0, count($ids), '%d'));
+
+        // Prepare and execute the SQL query to delete variations
+        $query = $wpdb->prepare(
+            "DELETE FROM $wpdb->posts
+        WHERE ID IN (
+            SELECT ID FROM $wpdb->postmeta
+            WHERE meta_key = 'variant_guid' AND meta_value IN ($placeholders)
+        ) AND post_type = 'product_variation'",
+            ...$ids // Unpack the array into the query
+        );
+
+        // Execute the query
+        $deleted_rows = $wpdb->query($query);
+
+        return $deleted_rows ? "$deleted_rows variants deleted." : 'No variants found.';
+    }
+
+    public function remove_product_category($data)
+    {
+        if (empty($data) || !isset($data['categoryId'])) {
+            return 'Invalid JSON data';
+        }
+
+        $ids = $data['categoryId'];
+
+        // Ensure $ids is an array
+        if (!is_array($ids)) {
+            $ids = [$ids]; // Convert to array if it's not
+        }
+
+        global $wpdb;
+
+        // Prepare the placeholders for the SQL query
+        $placeholders = implode(',', array_fill(0, count($ids), '%d'));
+
+        // Prepare and execute the SQL query to delete product categories
+        $query = $wpdb->prepare(
+            "DELETE FROM $wpdb->terms
+        WHERE term_id IN (
+            SELECT term_id FROM $wpdb->termmeta
+            WHERE meta_key = 'category_guid' AND meta_value IN ($placeholders)
+        )",
+            ...$ids // Unpack the array into the query
+        );
+
+        // Execute the query
+        $deleted_rows = $wpdb->query($query);
+
+        return $deleted_rows ? "$deleted_rows categories deleted." : 'No categories found.';
+    }
+
     //174789827 multi attr
     public function update_product($data)
     {
@@ -359,187 +540,6 @@ class WooCommerceProductManager
 
         return 'Products updated successfully';
     }
-
-    function fetch_image_data($url) {
-        // Check if allow_url_fopen is enabled
-        if (ini_get('allow_url_fopen')) {
-            $image_data = @file_get_contents($url);
-            
-            if ($image_data === false) {
-                // Handle error for file_get_contents
-                return 'Error fetching image using file_get_contents: ' . error_get_last()['message'];
-            }
-        } else {
-            // Fall back to cURL if allow_url_fopen is disabled
-            $image_data = self::fetch_image_with_curl($url);
-            if (is_string($image_data)) {
-                return $image_data; // Return error from cURL
-            }
-        }
-
-        return $image_data; // Return the fetched image data
-    }
-
-    function fetch_image_with_curl($url) {
-        $ch = curl_init();
-        
-        // Set cURL options
-        curl_setopt($ch, CURLOPT_URL, $url);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        
-        $image_data = curl_exec($ch);
-        
-        if ($image_data === false) {
-            // Handle cURL error
-            return 'Error fetching image using cURL: ' . curl_error($ch);
-        }
-        
-        curl_close($ch);
-        return $image_data; // Return the image data
-    }
-
-    private function upload_image($image_url)
-    {
-        // Ensure the URL is valid
-        if (\filter_var($image_url, FILTER_VALIDATE_URL)) {
-            if (! function_exists('wp_generate_attachment_metadata')) {
-                require_once ABSPATH . 'wp-admin/includes/image.php';
-            }
-
-
-
-            $upload_dir = \wp_upload_dir();
-            $image_data = self::fetch_image_data($image_url);
-            $filename = \basename($image_url);
-
-            // Check if the image was successfully retrieved
-            if ($image_data) {
-                $file_path = $upload_dir['path'] . '/' . $filename;
-                \file_put_contents($file_path, $image_data);
-
-                // Prepare the attachment
-                $wp_filetype = \wp_check_filetype($filename, null);
-                $attachment = [
-                    'post_mime_type' => $wp_filetype['type'],
-                    'post_title' => \sanitize_file_name($filename),
-                    'post_content' => '',
-                    'post_status' => 'inherit'
-                ];
-
-                // Insert the attachment into the media library
-                $attachment_id = \wp_insert_attachment($attachment, $file_path);
-                // Generate attachment metadata
-                $attach_data = \wp_generate_attachment_metadata($attachment_id, $file_path);
-                \wp_update_attachment_metadata($attachment_id, $attach_data);
-
-                return $attachment_id;
-            }
-        }
-        return false; // Return false if the image could not be uploaded
-    }
-
-    public function remove_product($data)
-    {
-        if (empty($data) || !isset($data['listOfId'])) {
-            return 'Invalid JSON data';
-        }
-
-        $ids = $data['listOfId'];
-
-        // Ensure $ids is an array
-        if (!is_array($ids)) {
-            $ids = [$ids]; // Convert to array if it's not
-        }
-
-        global $wpdb;
-
-        // Prepare the placeholders for the SQL query
-        $placeholders = implode(',', array_fill(0, count($ids), '%d'));
-
-        // Prepare and execute the SQL query to delete products
-        $query = $wpdb->prepare(
-            "DELETE FROM $wpdb->posts
-        WHERE ID IN (
-            SELECT ID FROM $wpdb->postmeta
-            WHERE meta_key = 'product_guid' AND meta_value IN ($placeholders)
-        ) AND post_type = 'product'",
-            ...$ids // Unpack the array into the query
-        );
-
-        // Execute the query
-        $deleted_rows = $wpdb->query($query);
-
-        return $deleted_rows ? "$deleted_rows products deleted." : 'No products found.';
-    }
-
-    public function remove_variant($data)
-    {
-        if (empty($data) || !isset($data['variantId'])) {
-            return 'Invalid JSON data';
-        }
-
-        $ids = $data['variantId'];
-
-        // Ensure $ids is an array
-        if (!is_array($ids)) {
-            $ids = [$ids]; // Convert to array if it's not
-        }
-
-        global $wpdb;
-
-        // Prepare the placeholders for the SQL query
-        $placeholders = implode(',', array_fill(0, count($ids), '%d'));
-
-        // Prepare and execute the SQL query to delete variations
-        $query = $wpdb->prepare(
-            "DELETE FROM $wpdb->posts
-        WHERE ID IN (
-            SELECT ID FROM $wpdb->postmeta
-            WHERE meta_key = 'variant_guid' AND meta_value IN ($placeholders)
-        ) AND post_type = 'product_variation'",
-            ...$ids // Unpack the array into the query
-        );
-
-        // Execute the query
-        $deleted_rows = $wpdb->query($query);
-
-        return $deleted_rows ? "$deleted_rows variants deleted." : 'No variants found.';
-    }
-
-    public function remove_product_category($data)
-    {
-        if (empty($data) || !isset($data['categoryId'])) {
-            return 'Invalid JSON data';
-        }
-
-        $ids = $data['categoryId'];
-
-        // Ensure $ids is an array
-        if (!is_array($ids)) {
-            $ids = [$ids]; // Convert to array if it's not
-        }
-
-        global $wpdb;
-
-        // Prepare the placeholders for the SQL query
-        $placeholders = implode(',', array_fill(0, count($ids), '%d'));
-
-        // Prepare and execute the SQL query to delete product categories
-        $query = $wpdb->prepare(
-            "DELETE FROM $wpdb->terms
-        WHERE term_id IN (
-            SELECT term_id FROM $wpdb->termmeta
-            WHERE meta_key = 'category_guid' AND meta_value IN ($placeholders)
-        )",
-            ...$ids // Unpack the array into the query
-        );
-
-        // Execute the query
-        $deleted_rows = $wpdb->query($query);
-
-        return $deleted_rows ? "$deleted_rows categories deleted." : 'No categories found.';
-    }
-
 
     public function webhook_update_product($data)
     {
