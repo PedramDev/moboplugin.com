@@ -22,6 +22,7 @@ function mobo_core_admin_page()
         $global_product_auto_price =   isset($_POST['global_product_auto_price']) ? 1 : 0;
         $global_product_auto_title =   isset($_POST['global_product_auto_title']) ? 1 : 0;
         $global_product_auto_caption = isset($_POST['global_product_auto_caption']) ? 1 : 0;
+        $global_product_auto_slug = isset($_POST['global_product_auto_slug']) ? 1 : 0;
 
         $global_product_auto_compare_price = isset($_POST['global_product_auto_compare_price']) ? 1 : 0;
 
@@ -30,6 +31,7 @@ function mobo_core_admin_page()
         update_option('global_product_auto_price', $global_product_auto_price);
         update_option('global_product_auto_title', $global_product_auto_title);
         update_option('global_product_auto_caption', $global_product_auto_caption);
+        update_option('global_product_auto_slug', $global_product_auto_slug);
 
         update_option('global_product_auto_compare_price', $global_product_auto_compare_price);
 
@@ -39,6 +41,7 @@ function mobo_core_admin_page()
         $global_product_auto_price = get_option('global_product_auto_price');
         $global_product_auto_title = get_option('global_product_auto_title');
         $global_product_auto_caption = get_option('global_product_auto_caption');
+        $global_product_auto_slug = get_option('global_product_auto_slug');
 
         $global_product_auto_compare_price = get_option('global_product_auto_compare_price');
 
@@ -82,6 +85,9 @@ function mobo_core_admin_page()
             </label>
             <label>
                 <input type="checkbox" name="global_product_auto_caption" value="1" <?php checked($global_product_auto_caption, '1'); ?>> بروزرسانی اتوماتیک «محتوا»
+            </label>
+            <label>
+                <input type="checkbox" name="global_product_auto_slug" value="1" <?php checked($global_product_auto_slug, '1'); ?>> بروزرسانی اتوماتیک «آدرس محصول»
             </label>
 
             <hr />
