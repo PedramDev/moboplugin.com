@@ -137,7 +137,7 @@ function mobo_core_admin_page()
                 <p>
                     در صورتی که htacess شما خالی باشد، وب هوک شما میشود:
                     <br>
-                    <code>
+                    <code dir="ltr">
                         https://yourwebsite.com/index.php?rest_route=/mobo-core/v1/webhook
                     </code>
                     <br>
@@ -145,7 +145,7 @@ function mobo_core_admin_page()
                     <br>
                     در صورتی که htaccess شما مقادیر پیشفرض وردپرس رو داشته باشد میشود:
                     <br>
-                    <code>
+                    <code dir="ltr">
                         https://yourwebsite.com/wp-json/mobo-core/v1/webhook
                     </code>
                 </p>
