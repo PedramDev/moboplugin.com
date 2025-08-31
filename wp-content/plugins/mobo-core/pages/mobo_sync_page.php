@@ -23,7 +23,7 @@ function mobo_core_sync_products()
     // Retrieve stored values
     $page = intval(get_option('mobo_sync_page', 1));
     $productLeft = get_option('mobo_sync_product_left', null);
-    $pageSize = intval(get_option('mobo_core_page_size', 5));
+    $mobo_core_page_size = intval(get_option('mobo_core_page_size', 5));
     $onlyInStock = intval(get_option('mobo_core_only_in_stock', true));
 
     if (is_null($productLeft)) {
@@ -46,7 +46,7 @@ function mobo_core_sync_products()
 
     // Process products
     if ($productLeft > 0) {
-        $productsDataJson = $apiFunc->getProductsAsJson($page, $pageSize, $onlyInStock);
+        $productsDataJson = $apiFunc->getProductsAsJson($page, $mobo_core_page_size, $onlyInStock);
         if ($productsDataJson === false) {
             add_action('admin_notices', function () {
                 echo '<div class="error"><p>خطا در دریافت محصولات</p></div>';
@@ -56,7 +56,7 @@ function mobo_core_sync_products()
         $productFunc->update_product($productsDataJson);
 
         // Update counters
-        $productLeft -= $pageSize;
+        $productLeft -= $mobo_core_page_size;
         $page++;
 
         // Update options
@@ -93,6 +93,8 @@ function mobo_core_sync_page()
     $page = intval(get_option('mobo_sync_page', 1));
     $productLeft = get_option('mobo_sync_product_left', null);
 
+
+
     if (!mobo_isLicenseExpired()) {
         $mobo_core_page_size = get_option('mobo_core_page_size', 5);
         if (isset($_POST['submit'])) {
@@ -127,13 +129,32 @@ function mobo_core_sync_page()
                     mobo_core_sync_stop();
                 }
 
-                update_option('mobo_core_page_size', trim($_POST['mobo_core_page_size']));
+                update_option('mobo_core_page_size', intval(trim($_POST['mobo_core_page_size'])));
 
                 $page = intval($_POST['page']);
                 update_option('mobo_sync_page', $page);
+
+                $mobo_core_page_size = $_POST['mobo_core_page_size'];
             }
         }
 
+
+        if (is_null($productLeft) || $productLeft == false) {
+            // Initial setup
+            $totalCount =  $apiFunc->getProductsCount();
+            if ($totalCount === false) {
+                add_action('admin_notices', function () {
+                    echo '<div class="error"><p>خطا در دریافت تعداد محصولات</p></div>';
+                });
+                return;
+            }
+            $totalCount = intval($totalCount);
+
+            $productLeft = $totalCount;
+            update_option('mobo_sync_product_left', $productLeft);
+        } else {
+            $productLeft = intval($productLeft);
+        }
         $productLeft = intval($productLeft);
 ?>
         <p>
@@ -141,10 +162,22 @@ function mobo_core_sync_page()
             <br />
             <?php echo $info['timeLeft']; ?>
         </p>
+        <hr />
+        <div>
+            وضعیت همگام سازی : 
+            <?php 
+                if (!wp_next_scheduled('mobo_core_sync_products_event')) {
+                    echo '<span style="color:red">غیر فعال</span>';
+                }
+                else{
+                    echo '<span style="color:green">فعال</span>';
+                }
+            ?>
+        </div>
+
         <p>
             <?php
-
-            $intervals = $productLeft / $mobo_core_page_size;
+            $intervals = $productLeft / intval($mobo_core_page_size);
             $totalTimeInSeconds = $intervals * 40;
             $minutes = floor($totalTimeInSeconds / 60);
             $seconds = $totalTimeInSeconds % 60;
@@ -166,19 +199,20 @@ function mobo_core_sync_page()
             <label for="page">شماره درخواست :</label>
             <input type="number" name="page" id="page" step="1" value="<?php echo $page; ?>" />
 
-            <?php submit_button('بروزرسانی تنظیمات'); ?>
-        </form>
-
-        <form method="post" action="">
-            <input type="hidden" name="mobo_core_sync_categories" value="mobo_core_sync_categories" />
-            <?php wp_nonce_field('mobo_core_sync_categories_nounce'); ?>
-
             <hr />
 
             <label for="mobo_core_page_size">
                 تعداد دریافت محصول در هر درخواست
             </label>
             <input type="number" style="font-family:'Courier New', Courier, monospace;" dir="ltr" name="mobo_core_page_size" id="mobo_core_page_size" value="<?php echo $mobo_core_page_size; ?>" />
+
+            
+            <?php submit_button('بروزرسانی تنظیمات'); ?>
+        </form>
+
+        <form method="post" action="">
+            <input type="hidden" name="mobo_core_sync_categories" value="mobo_core_sync_categories" />
+            <?php wp_nonce_field('mobo_core_sync_categories_nounce'); ?>
 
 
             <?php submit_button('همگام سازی'); ?>

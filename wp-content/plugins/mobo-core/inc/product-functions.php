@@ -277,11 +277,15 @@ class WooCommerceProductManager
             $result = $this->get_or_create_product($product_id, $attributes);
 
             $this->set_product_details($result['product'], $result['isNew'], $product_url, $title, $caption, $price, $comparePrice, $stock, $auto_options, $wp_category_ids);
-            $this->handle_images($result['product'], $images);
-            $this->update_attributes($result['product'], $attributes);
-            $this->update_variants($result['product'], $variants, $auto_options);
+            
+            $wp_product_id = $result['product']->save();
+            $result['product']->update_meta_data('product_guid', $product_id); // Store GUID
 
-            $result['product']->save();
+            $this->handle_images($result['product'], $images);
+            $this->update_attributes($result['product'], $attributes, $wp_product_id);
+            $this->update_variants($result['product'], $variants, $auto_options,$wp_product_id);
+
+            $wp_product_id = $result['product']->save();
         }
 
         return 'Products updated successfully';
@@ -372,9 +376,9 @@ class WooCommerceProductManager
             case 'dynamic-price':
 
                 foreach ($dynamic_condition as $condition) {
-                    if ($condition['is_active'] == 'true' && $price >= $condition['low'] && $price <= $condition['high']) {
+                    if ($condition['is_active'] == 'true' && $price >= intval($condition['low']) && $price <= intval($condition['high'])) {
                         if ($condition['benefit_type'] == 'static') {
-                            $product->set_regular_price(intval($price) + $condition['benefit']);
+                            $product->set_regular_price(intval($price) + intval($condition['benefit']));
                             $product->set_sale_price('');
                         } else {
                             $product->set_regular_price(intval($price) *  floatval('1.' . $condition['benefit']));
@@ -411,10 +415,10 @@ class WooCommerceProductManager
             case 'dynamic-price':
 
                 foreach ($dynamic_condition as $condition) {
-                    if ($condition['is_active'] == 'true' && $price >= $condition['low'] && $price <= $condition['high']) {
+                    if ($condition['is_active'] == 'true' && $price >= intval($condition['low']) && $price <= intval($condition['high'])) {
                         if ($condition['benefit_type'] == 'static') {
-                            $product->set_regular_price(intval($comparePrice) + $condition['benefit']);
-                            $product->set_sale_price(intval($price) + $condition['benefit']);
+                            $product->set_regular_price(intval($comparePrice) + intval($condition['benefit']));
+                            $product->set_sale_price(intval($price) + intval($condition['benefit']));
                         } else {
                             $product->set_regular_price(intval($comparePrice) * floatval('1.' . $condition['benefit']));
                             $product->set_sale_price(intval($price) *  floatval('1.' . $condition['benefit']));
@@ -474,7 +478,7 @@ class WooCommerceProductManager
         }
     }
 
-    private function update_attributes($product, $attributes)
+    private function update_attributes($product, $attributes, $wp_product_id)
     {
         $attribute_data = [];
         foreach ($attributes as $attribute) {
@@ -486,18 +490,18 @@ class WooCommerceProductManager
             $newAttr->set_options($values);
             $attribute_data[] = $newAttr;
 
-            \update_post_meta($product->get_id(), 'attr_guid', $attribute['id']);
+            \update_post_meta($wp_product_id, 'attr_guid', $attribute['id']);
         }
 
         $product->set_attributes($attribute_data);
     }
 
-    private function update_variants($product, $variants, $auto_options)
+    private function update_variants($product, $variants, $auto_options,$wp_product_id)
     {
         foreach ($variants as $variant) {
             $existing_variant_id = $this->get_existing_variant_id($product, $variant['variantId']);
             $variation = $existing_variant_id ? new \WC_Product_Variation($existing_variant_id) : new \WC_Product_Variation();
-            $variation->set_parent_id($product->get_id());
+            $variation->set_parent_id($wp_product_id);
 
             $this->set_variant_details($existing_variant_id, $variation, $variant, $auto_options);
             $variation->save();
@@ -575,9 +579,9 @@ class WooCommerceProductManager
                 case 'dynamic-price':
 
                     foreach ($dynamic_condition as $condition) {
-                        if ($condition['is_active'] == 'true' && $price >= $condition['low'] && $price <= $condition['high']) {
+                        if ($condition['is_active'] == 'true' && $price >= intval($condition['low']) && $price <= intval($condition['high'])) {
                             if ($condition['benefit_type'] == 'static') {
-                                $variation->set_regular_price(intval($price) + $condition['benefit']);
+                                $variation->set_regular_price(intval($price) + intval($condition['benefit']));
                                 $variation->set_sale_price('');
                             } else {
                                 $variation->set_regular_price(intval($price) *  floatval('1.' . $condition['benefit']));

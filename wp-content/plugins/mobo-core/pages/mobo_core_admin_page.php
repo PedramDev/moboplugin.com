@@ -58,17 +58,7 @@ function mobo_core_admin_page()
         $json = json_encode($_POST['dynamic_condition']);
         update_option('mobo_dynamic_price', $json);
 
-        // switch ($mobo_price_type) {
-        //     case 'static-price':
-
-        //         break;
-        //     case 'static-percentage':
-
-        //         break;
-        //     case 'dynamic-price':
-
-        //         break;
-        // }
+        $dynamic_condition = $_POST['dynamic_condition'];
 
     } else {
 
@@ -173,6 +163,20 @@ function mobo_core_admin_page()
             }
         </style>
 
+
+
+<br>
+<br>
+<br>
+<br>
+<p>
+    حالت شرطی کاملا منطقی است یعنی اگر یک مبلغی در رنج مبالغ انتخابی نبود اعمال نمیشود!
+    <br>
+     برای مثال اگر برای بازه بین ۱۰۰۰ تا ۱۰۰۰۰۰ تومان سود انتخاب کرده باشید و مبلغ محصول در موبو ۱۰۰۰۰۱ بود و در هیچ شرطی قرار نگرفت، هیچ مبلغی اعمال نمیشود بنابر این حتما تمام مبالغ مورد نیاز را اعمال کنید و برای مبالغ بالاتر نیز برنامه ریزی داشته باشید
+</p>
+<br>
+<br>
+
         <div style="border: 1px solid #3e3e3e;"
             style="
                         display: flex;
@@ -222,13 +226,9 @@ function mobo_core_admin_page()
 
                         <div style="border: 1px dashed #3e3e3e; padding:10px;margin:10px">
 
-                            <div class="mobo_input_group">
-                                <label>
-                                    <input type="radio" name="dynamic_condition[<?php echo $i ?>][is_active]" value="true" <?php if ($dynamic_condition[$i]['is_active'] == "true") echo 'checked'; ?>> فعال<br>
-                                </label>
-                                <label>
-                                    <input type="radio" name="dynamic_condition[<?php echo $i ?>][is_active]" value="false" <?php if ($dynamic_condition[$i]['is_active'] == "false") echo 'checked'; ?>> غیرفعال<br>
-                                </label>
+                            <div>
+                                <input type="radio" name="dynamic_condition[<?php echo $i ?>][is_active]" value="true" <?php if ($dynamic_condition[$i]['is_active'] == "true") echo 'checked'; ?>> فعال<br>
+                                <input type="radio" name="dynamic_condition[<?php echo $i ?>][is_active]" value="false" <?php if ($dynamic_condition[$i]['is_active'] == "false" || !isset($dynamic_condition[$i]['is_active'])) echo 'checked'; ?>> غیرفعال<br>
                             </div>
                             <br />
 
