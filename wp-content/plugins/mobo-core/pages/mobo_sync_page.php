@@ -164,16 +164,16 @@ function mobo_core_sync_page()
         </p>
         <hr />
         <div>
-            وضعیت همگام سازی : 
-            <?php 
-                if (!wp_next_scheduled('mobo_core_sync_products_event')) {
-                    echo '<span style="color:red">غیر فعال</span>';
-                }
-                else{
-                    echo '<span style="color:green">فعال</span>';
-                }
+            وضعیت همگام سازی :
+            <?php
+            if (!wp_next_scheduled('mobo_core_sync_products_event')) {
+                echo '<span style="color:red">غیر فعال</span>';
+            } else {
+                echo '<span style="color:green">فعال</span>';
+            }
             ?>
         </div>
+        <hr />
 
         <p>
             <?php
@@ -187,6 +187,8 @@ function mobo_core_sync_page()
             <br />
             زمان تقریبی پایان همگام سازی : <?php echo $minutes; ?> دقیقه و <?php echo $seconds; ?> ثانیه
         </p>
+
+        <hr />
 
         <form method="post" action="">
             <p>
@@ -206,9 +208,11 @@ function mobo_core_sync_page()
             </label>
             <input type="number" style="font-family:'Courier New', Courier, monospace;" dir="ltr" name="mobo_core_page_size" id="mobo_core_page_size" value="<?php echo $mobo_core_page_size; ?>" />
 
-            
+
             <?php submit_button('بروزرسانی تنظیمات'); ?>
         </form>
+
+        <hr />
 
         <form method="post" action="">
             <input type="hidden" name="mobo_core_sync_categories" value="mobo_core_sync_categories" />

@@ -59,7 +59,6 @@ function mobo_core_admin_page()
         update_option('mobo_dynamic_price', $json);
 
         $dynamic_condition = $_POST['dynamic_condition'];
-
     } else {
 
         $dynamic_condition = [];
@@ -165,17 +164,27 @@ function mobo_core_admin_page()
 
 
 
-<br>
-<br>
-<br>
-<br>
-<p>
-    حالت شرطی کاملا منطقی است یعنی اگر یک مبلغی در رنج مبالغ انتخابی نبود اعمال نمیشود!
-    <br>
-     برای مثال اگر برای بازه بین ۱۰۰۰ تا ۱۰۰۰۰۰ تومان سود انتخاب کرده باشید و مبلغ محصول در موبو ۱۰۰۰۰۱ بود و در هیچ شرطی قرار نگرفت، هیچ مبلغی اعمال نمیشود بنابر این حتما تمام مبالغ مورد نیاز را اعمال کنید و برای مبالغ بالاتر نیز برنامه ریزی داشته باشید
-</p>
-<br>
-<br>
+        <br>
+        <br>
+        <br>
+        <br>
+        <p dir="rtl" style="text-align: right;">
+            حالت شرطی کاملا منطقی است یعنی اگر یک مبلغی در رنج مبالغ انتخابی نبود اعمال نمیشود!
+            <br>
+            برای مثال اگر برای بازه بین ۱۰۰۰ تا ۱۰۰۰۰۰ تومان سود انتخاب کرده باشید و مبلغ محصول در موبو ۱۰۰۰۰۱ بود و در هیچ شرطی قرار نگرفت، هیچ مبلغی اعمال نمیشود بنابر این حتما تمام مبالغ مورد نیاز را اعمال کنید و برای مبالغ بالاتر نیز برنامه ریزی داشته باشید
+            <br>
+            مقایسه به صورت بزرگتر یا کوچتر صورت میگیرد و بزرگتر و مساوی یا کوچکتر و مساوی نیست!
+            <br>
+            <bdi dir="ltr">
+                1 > price < 10000=> 10,000
+            </bdi>
+            <br>
+            <bdi dir="ltr">
+                10000 > price < 20000000> 20%
+            </bdi>
+        </p>
+        <br>
+        <br>
 
         <div style="border: 1px solid #3e3e3e;"
             style="
@@ -183,7 +192,9 @@ function mobo_core_admin_page()
                         flex-direction: column;
                         gap: 20px;
                         max-width: 500px;">
-            <h2>تنظیمات قیمت</h2>
+            <h2 style="
+                padding: 10px;
+            ">تنظیمات قیمت</h2>
 
             <form method="post" id="mobo_price_coditions" action=""
                 style="display: flex;
