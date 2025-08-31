@@ -277,13 +277,13 @@ class WooCommerceProductManager
             $result = $this->get_or_create_product($product_id, $attributes);
 
             $this->set_product_details($result['product'], $result['isNew'], $product_url, $title, $caption, $price, $comparePrice, $stock, $auto_options, $wp_category_ids);
-            
+
             $wp_product_id = $result['product']->save();
             $result['product']->update_meta_data('product_guid', $product_id); // Store GUID
 
             $this->handle_images($result['product'], $images);
             $this->update_attributes($result['product'], $attributes, $wp_product_id);
-            $this->update_variants($result['product'], $variants, $auto_options,$wp_product_id);
+            $this->update_variants($result['product'], $variants, $auto_options, $wp_product_id);
 
             $wp_product_id = $result['product']->save();
         }
@@ -388,6 +388,11 @@ class WooCommerceProductManager
                 }
 
                 break;
+
+            default:
+                $product->set_regular_price(intval($price) + $static_price);
+                $product->set_sale_price('');
+                break;
         }
     }
 
@@ -426,6 +431,10 @@ class WooCommerceProductManager
                     }
                 }
 
+                break;
+            default:
+                $product->set_regular_price(intval($comparePrice) + $static_price);
+                $product->set_sale_price(intval($price) + $static_price);
                 break;
         }
     }
@@ -496,7 +505,7 @@ class WooCommerceProductManager
         $product->set_attributes($attribute_data);
     }
 
-    private function update_variants($product, $variants, $auto_options,$wp_product_id)
+    private function update_variants($product, $variants, $auto_options, $wp_product_id)
     {
         foreach ($variants as $variant) {
             $existing_variant_id = $this->get_existing_variant_id($product, $variant['variantId']);
@@ -590,6 +599,10 @@ class WooCommerceProductManager
                         }
                     }
 
+                    break;
+                default:
+                    $variation->set_regular_price(intval($price) + $static_price);
+                    $variation->set_sale_price('');
                     break;
             }
         }
