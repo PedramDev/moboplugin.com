@@ -122,6 +122,7 @@ function mobo_core_admin_page()
                     <bdi dir="ltr">
                         Common Settings : Once Per Minute(* * * * *)
                     </bdi>
+                    <br>
                     <code dir="ltr">wget -q -O - https://yourwebsite.com/wp-cron.php?doing_wp_cron >/dev/null 2>&1</code>
                 </p>
 
