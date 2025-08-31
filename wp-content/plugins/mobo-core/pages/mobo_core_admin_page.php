@@ -114,6 +114,14 @@ function mobo_core_admin_page()
 
                 <?php echo $message; ?>
 
+                <p>
+                    لطفا حتما این کد را در cpanel خود وارد کنید تا از لایو موندن اپلیکیشن (وردپرس) اطمینان حاصل شود
+                    <br>
+                    توضیحات اضافه : در تمام سیستم های هاستینگ برای استفاده صحیح از منابع ، در صورتی که درخواستی از بیرون به سیستم ارسال نشود - نرم افزار خاموش میشود، این کد نرم افزار شما را دوباره زنده میکند
+                    <br>
+                    <code>wget -q -O - https://yourwebsite.com/wp-cron.php?doing_wp_cron >/dev/null 2>&1</code>
+                </p>
+
 
                 <label for="token">Token:</label>
                 <input type="text" style="font-family:'Courier New', Courier, monospace;" dir="ltr" name="token" id="token" value="<?php echo get_option('mobo_core_token'); ?>" />
