@@ -94,21 +94,21 @@ function mobo_core_admin_page()
                         display: flex;
                         flex-direction: column;
                         gap: 20px;
-                        max-width: 500px;">
+                        max-width: 700px;">
 
         <div style="border: 1px solid #3e3e3e;"
             style="
                         display: flex;
                         flex-direction: column;
                         gap: 20px;
-                        max-width: 500px;">
+                        max-width: 700px;">
 
             <h2>تنظیمات اصلی</h2>
             <form method="post" action=""
                 style="display: flex;
                             flex-direction: column;
                             gap: 20px;
-                            max-width: 500px;
+                            max-width: 700px;
                             padding:10px;">
 
 
@@ -119,7 +119,10 @@ function mobo_core_admin_page()
                     <br>
                     توضیحات اضافه : در تمام سیستم های هاستینگ برای استفاده صحیح از منابع ، در صورتی که درخواستی از بیرون به سیستم ارسال نشود - نرم افزار خاموش میشود، این کد نرم افزار شما را دوباره زنده میکند
                     <br>
-                    <code>wget -q -O - https://yourwebsite.com/wp-cron.php?doing_wp_cron >/dev/null 2>&1</code>
+                    <bdi dir="ltr">
+                        Common Settings : Once Per Minute(* * * * *)
+                    </bdi>
+                    <code dir="ltr">wget -q -O - https://yourwebsite.com/wp-cron.php?doing_wp_cron >/dev/null 2>&1</code>
                 </p>
 
 
