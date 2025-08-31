@@ -122,6 +122,34 @@ function mobo_core_admin_page()
                 <label for="SecurityCode">Webhook SecurityCode:</label>
                 <input type="text" style="font-family:'Courier New', Courier, monospace;" dir="ltr" name="SecurityCode" id="SecurityCode" value="<?php echo get_option('mobo_core_security_code'); ?>" />
 
+                <p>
+                    در صورتی که htacess شما خالی باشد، وب هوک شما میشود:
+                    <br>
+                    https://yourwebsite.com/index.php?rest_route=/mobo-core/v1/webhook
+                    <br>
+                    <hr>
+                    <br>
+                    در صورتی که htaccess شما مقادیر پیشفرض وردپرس رو داشته باشد میشود:
+                    <br>
+                    https://yourwebsite.com/wp-json/mobo-core/v1/webhook
+                </p>
+
+                <p>
+                    پیشفضرض وردپرس:
+                    <code>
+                        # BEGIN WordPress
+                        &gt;IfModule mod_rewrite.c&lt;
+                        RewriteEngine On
+                        RewriteBase /
+                        RewriteRule ^index\.php$ - [L]
+                        RewriteCond %{REQUEST_FILENAME} !-f
+                        RewriteCond %{REQUEST_FILENAME} !-d
+                        RewriteRule . /index.php [L]
+                        &gt;/IfModule&lt;
+                        # END WordPress
+                    </code>
+                </p>
+
                 <hr />
 
                 <label>
