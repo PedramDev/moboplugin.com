@@ -15,6 +15,7 @@ function mobo_core_admin_page()
         update_option('mobo_core_token', trim($_POST['token']));
         update_option('mobo_core_security_code', trim($_POST['SecurityCode']));
 
+        $mobo_core_only_in_stock = isset($_POST['mobo_core_only_in_stock']) ? 1 : 0;
 
 
         $global_product_auto_stock = isset($_POST['global_product_auto_stock']) ? 1 : 0;
@@ -26,6 +27,8 @@ function mobo_core_admin_page()
         $global_product_auto_compare_price = isset($_POST['global_product_auto_compare_price']) ? 1 : 0;
 
 
+        update_option('mobo_core_only_in_stock', $mobo_core_only_in_stock);
+
         update_option('global_product_auto_stock', $global_product_auto_stock);
         update_option('global_product_auto_price', $global_product_auto_price);
         update_option('global_product_auto_title', $global_product_auto_title);
@@ -36,6 +39,8 @@ function mobo_core_admin_page()
 
         $message = '<div class="updated"><p>تنظیمات موبوکور ذخیره شده</p></div>';
     } else {
+        $mobo_core_only_in_stock = intval(get_option('mobo_core_only_in_stock', true));
+
         $global_product_auto_stock = get_option('global_product_auto_stock');
         $global_product_auto_price = get_option('global_product_auto_price');
         $global_product_auto_title = get_option('global_product_auto_title');
@@ -136,6 +141,10 @@ function mobo_core_admin_page()
                 </label>
 
                 <hr />
+
+                <label>
+                    <input type="checkbox" name="mobo_core_only_in_stock" value="1" <?php checked($mobo_core_only_in_stock, '1'); ?>> فقط محصولات موجود
+                </label>
 
                 <label>
                     <input type="checkbox" name="global_product_auto_compare_price" value="1" <?php checked($global_product_auto_compare_price, '1'); ?>> اعمال تخفیف های موبو
@@ -263,7 +272,7 @@ function mobo_core_admin_page()
 
                             <div>
                                 <input type="radio" name="dynamic_condition[<?php echo $i ?>][benefit_type]" value="percentage" <?php if ($dynamic_condition[$i]['benefit_type'] == "percentage") echo 'checked'; ?>> درصد<br>
-                                <input type="radio" name="dynamic_condition[<?php echo $i ?>][benefit_type]" value="static" <?php if ($dynamic_condition[$i]['benefit_type'] == "static") echo 'checked'; ?>> قیمت ثابت<br>
+                                <input type="radio" name="dynamic_condition[<?php echo $i ?>][benefit_type]" value="static" <?php if (!isset($dynamic_condition[$i]['benefit_type']) || $dynamic_condition[$i]['benefit_type'] == "static") echo 'checked'; ?>> قیمت ثابت<br>
                             </div>
                             <br />
                             <div class="mobo_input_group">

@@ -135,9 +135,11 @@ function mobo_core_sync_page()
                 update_option('mobo_sync_page', $page);
 
                 $mobo_core_page_size = $_POST['mobo_core_page_size'];
+            } else if (isset($_POST['mobo_core_sync_stop'])) {
+                check_admin_referer('mobo_core_sync_stop_nounce');
+                mobo_core_sync_stop();
             }
         }
-
 
         if (is_null($productLeft) || $productLeft == false) {
             // Initial setup
@@ -220,6 +222,16 @@ function mobo_core_sync_page()
 
 
             <?php submit_button('همگام سازی'); ?>
+        </form>
+
+        <hr />
+
+        <form method="post" action="">
+            <input type="hidden" name="mobo_core_sync_stop" value="mobo_core_sync_stop" />
+            <?php wp_nonce_field('mobo_core_sync_stop_nounce'); ?>
+
+
+            <?php submit_button('توقف همگام سازی'); ?>
         </form>
     <?php
     } else {
