@@ -148,7 +148,8 @@ function mobo_core_admin_page()
 
                 <p>
                     پیشفضرض وردپرس:
-                    <code>
+                    <pre>
+                        <code>
                         # BEGIN WordPress
                         &gt;IfModule mod_rewrite.c&lt;
                         RewriteEngine On
@@ -159,7 +160,8 @@ function mobo_core_admin_page()
                         RewriteRule . /index.php [L]
                         &gt;/IfModule&lt;
                         # END WordPress
-                    </code>
+                        </code>
+                    </pre>
                 </p>
 
                 <hr />
