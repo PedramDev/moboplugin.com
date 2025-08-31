@@ -137,30 +137,34 @@ function mobo_core_admin_page()
                 <p>
                     در صورتی که htacess شما خالی باشد، وب هوک شما میشود:
                     <br>
-                    https://yourwebsite.com/index.php?rest_route=/mobo-core/v1/webhook
+                    <code>
+                        https://yourwebsite.com/index.php?rest_route=/mobo-core/v1/webhook
+                    </code>
                     <br>
                     <hr>
                     <br>
                     در صورتی که htaccess شما مقادیر پیشفرض وردپرس رو داشته باشد میشود:
                     <br>
-                    https://yourwebsite.com/wp-json/mobo-core/v1/webhook
+                    <code>
+                        https://yourwebsite.com/wp-json/mobo-core/v1/webhook
+                    </code>
                 </p>
 
                 <p>
                     پیشفضرض وردپرس:
-                    <pre>
-                        <code>
-                        # BEGIN WordPress
-                        &gt;IfModule mod_rewrite.c&lt;
-                        RewriteEngine On
-                        RewriteBase /
-                        RewriteRule ^index\.php$ - [L]
-                        RewriteCond %{REQUEST_FILENAME} !-f
-                        RewriteCond %{REQUEST_FILENAME} !-d
-                        RewriteRule . /index.php [L]
-                        &gt;/IfModule&lt;
-                        # END WordPress
-                        </code>
+                    <pre dir="ltr">
+<code>
+# BEGIN WordPress
+&lt;IfModule mod_rewrite.c&gt;
+RewriteEngine On
+RewriteBase /
+RewriteRule ^index\.php$ - [L]
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule . /index.php [L]
+&lt;/IfModule&gt;
+# END WordPress
+</code>
                     </pre>
                 </p>
 
