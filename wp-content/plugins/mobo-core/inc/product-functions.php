@@ -348,7 +348,9 @@ class WooCommerceProductManager
             $product->set_stock_status(($stock > 0 || $stock == null) ? 'instock' : 'outofstock');
         }
 
-        $product->set_category_ids($wp_category_ids);
+        if ($isNew || $auto_options['global_update_categories'] == '1') {
+            $product->set_category_ids($wp_category_ids);
+        }
     }
 
 
@@ -617,6 +619,7 @@ class WooCommerceProductManager
             'global_product_auto_caption',
             'global_product_auto_compare_price',
             'global_product_auto_slug',
+            'global_update_categories',
 
             'mobo_price_type',
             'global_additional_price',

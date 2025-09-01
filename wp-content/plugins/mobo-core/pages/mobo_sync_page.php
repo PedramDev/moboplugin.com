@@ -8,65 +8,103 @@ if (!defined('ABSPATH')) {
 
 function mobo_core_sync_categories()
 {
-    $apiFunc = new \MoboCore\ApiFunctions();
+    $lockFile = sys_get_temp_dir() . '/mobo_cats_sync_lock'; // Temporary lock file path
 
-    $categoriesDataJson = $apiFunc->getCategoriesAsJson();
-    $catFunc = new \MoboCore\WooCommerceCategoryManager();
-    $catFunc->addOrUpdateAllCategories($categoriesDataJson);
+    // Check if the lock file exists
+    if (file_exists($lockFile)) {
+        add_action('admin_notices', function () {
+            echo '<div class="error"><p>عملیات هم‌زمان مجاز نیست.</p></div>';
+        });
+        return; // Exit if the function is already running
+    }
+
+    // Create a lock file
+    file_put_contents($lockFile, "locked");
+
+    try {
+
+        $apiFunc = new \MoboCore\ApiFunctions();
+
+        $categoriesDataJson = $apiFunc->getCategoriesAsJson();
+        $catFunc = new \MoboCore\WooCommerceCategoryManager();
+        $catFunc->addOrUpdateAllCategories($categoriesDataJson);
+    } finally {
+        // Remove the lock file
+        unlink($lockFile);
+    }
 }
 
 function mobo_core_sync_products()
 {
-    $apiFunc = new \MoboCore\ApiFunctions(); // Replace with your API function class
-    $productFunc = new \MoboCore\WooCommerceProductManager(); // Replace with your product function class
+    $lockFile = sys_get_temp_dir() . '/mobo_prod_sync_lock'; // Temporary lock file path
 
-    // Retrieve stored values
-    $page = intval(get_option('mobo_sync_page', 1));
-    $productLeft = get_option('mobo_sync_product_left', null);
-    $mobo_core_page_size = intval(get_option('mobo_core_page_size', 5));
-    $onlyInStock = intval(get_option('mobo_core_only_in_stock', true));
-
-    if (is_null($productLeft)) {
-        // Initial setup
-        $totalCount =  $apiFunc->getProductsCount();
-        if ($totalCount === false) {
-            add_action('admin_notices', function () {
-                echo '<div class="error"><p>خطا در دریافت تعداد محصولات</p></div>';
-            });
-            return;
-        }
-        $totalCount = intval($totalCount);
-
-        $productLeft = $totalCount;
-        update_option('mobo_sync_product_left', $productLeft);
-    } else {
-        $productLeft = intval($productLeft);
+    // Check if the lock file exists
+    if (file_exists($lockFile)) {
+        add_action('admin_notices', function () {
+            echo '<div class="error"><p>عملیات هم‌زمان مجاز نیست.</p></div>';
+        });
+        return; // Exit if the function is already running
     }
 
+    // Create a lock file
+    file_put_contents($lockFile, "locked");
 
-    // Process products
-    if ($productLeft > 0) {
-        $productsDataJson = $apiFunc->getProductsAsJson($page, $mobo_core_page_size, $onlyInStock);
-        if ($productsDataJson === false) {
-            add_action('admin_notices', function () {
-                echo '<div class="error"><p>خطا در دریافت محصولات</p></div>';
-            });
-            return;
+    try {
+
+        $apiFunc = new \MoboCore\ApiFunctions(); // Replace with your API function class
+        $productFunc = new \MoboCore\WooCommerceProductManager(); // Replace with your product function class
+
+        // Retrieve stored values
+        $page = intval(get_option('mobo_sync_page', 1));
+        $productLeft = get_option('mobo_sync_product_left', null);
+        $mobo_core_page_size = intval(get_option('mobo_core_page_size', 5));
+        $onlyInStock = intval(get_option('mobo_core_only_in_stock', true));
+
+        if (is_null($productLeft)) {
+            // Initial setup
+            $totalCount =  $apiFunc->getProductsCount();
+            if ($totalCount === false) {
+                add_action('admin_notices', function () {
+                    echo '<div class="error"><p>خطا در دریافت تعداد محصولات</p></div>';
+                });
+                return;
+            }
+            $totalCount = intval($totalCount);
+
+            $productLeft = $totalCount;
+            update_option('mobo_sync_product_left', $productLeft);
+        } else {
+            $productLeft = intval($productLeft);
         }
-        $productFunc->update_product($productsDataJson);
 
-        // Update counters
-        $productLeft -= $mobo_core_page_size;
-        $page++;
 
-        // Update options
-        update_option('mobo_sync_page', $page);
-        update_option('mobo_sync_product_left', $productLeft);
-    }
+        // Process products
+        if ($productLeft > 0) {
+            $productsDataJson = $apiFunc->getProductsAsJson($page, $mobo_core_page_size, $onlyInStock);
+            if ($productsDataJson === false) {
+                add_action('admin_notices', function () {
+                    echo '<div class="error"><p>خطا در دریافت محصولات</p></div>';
+                });
+                return;
+            }
+            $productFunc->update_product($productsDataJson);
 
-    // Cleanup after completion
-    if ($productLeft <= 0) {
-        mobo_core_sync_stop();
+            // Update counters
+            $productLeft -= $mobo_core_page_size;
+            $page++;
+
+            // Update options
+            update_option('mobo_sync_page', $page);
+            update_option('mobo_sync_product_left', $productLeft);
+        }
+
+        // Cleanup after completion
+        if ($productLeft <= 0) {
+            mobo_core_sync_stop();
+        }
+    } finally {
+        // Remove the lock file
+        unlink($lockFile);
     }
 }
 

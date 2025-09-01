@@ -25,6 +25,7 @@ function mobo_core_admin_page()
         $global_product_auto_slug = isset($_POST['global_product_auto_slug']) ? 1 : 0;
 
         $global_product_auto_compare_price = isset($_POST['global_product_auto_compare_price']) ? 1 : 0;
+        $global_update_categories = isset($_POST['global_update_categories']) ? 1 : 0;
 
 
         update_option('mobo_core_only_in_stock', $mobo_core_only_in_stock);
@@ -36,6 +37,7 @@ function mobo_core_admin_page()
         update_option('global_product_auto_slug', $global_product_auto_slug);
 
         update_option('global_product_auto_compare_price', $global_product_auto_compare_price);
+        update_option('global_update_categories', $global_update_categories);
 
         $message = '<div class="updated"><p>تنظیمات موبوکور ذخیره شده</p></div>';
     } else {
@@ -48,6 +50,8 @@ function mobo_core_admin_page()
         $global_product_auto_slug = get_option('global_product_auto_slug');
 
         $global_product_auto_compare_price = get_option('global_product_auto_compare_price');
+        $global_update_categories = get_option('global_update_categories');
+        
     }
 
     if (isset($_POST['save_mobo_core_price'])) {
@@ -196,6 +200,9 @@ RewriteRule . /index.php [L]
                     <input type="checkbox" name="global_product_auto_compare_price" value="1" <?php checked($global_product_auto_compare_price, '1'); ?>> اعمال تخفیف های موبو
                 </label>
 
+                <label>
+                    <input type="checkbox" name="global_update_categories" value="1" <?php checked($global_update_categories, '1'); ?>> آپدیت اتوماتیک دسته بندی ها
+                </label>
 
                 <input type="submit" name="save_mobo_core_settings" value="ذخیره تنظیمات اصلی" class="button button-primary" />
             </form>
