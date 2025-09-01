@@ -121,6 +121,9 @@ function mobo_core_sync_stop()
     add_action('admin_notices', function () {
         echo '<div class="updated"><p>همگام سازی متوقف شد!</p></div>';
     });
+
+    global $isSyncActive;
+    $isSyncActive = false;
 }
 
 // Admin page function
@@ -131,6 +134,11 @@ function mobo_core_sync_page()
     $page = intval(get_option('mobo_sync_page', 1));
     $productLeft = get_option('mobo_sync_product_left', null);
 
+
+    $isSyncActive = false;
+    if (wp_next_scheduled('mobo_core_sync_products_event')) {
+        $isSyncActive = true;
+    }
 
 
     if (!mobo_isLicenseExpired()) {
@@ -151,8 +159,10 @@ function mobo_core_sync_page()
                 $catFunc = new \MoboCore\WooCommerceCategoryManager();
                 $catFunc->addOrUpdateAllCategories($categoriesDataJson);
 
-                if (!wp_next_scheduled('mobo_core_sync_products_event')) {
+                if (!$isSyncActive) {
                     wp_schedule_event(time(), 'mobo_core_product_interval', 'mobo_core_sync_products_event');
+
+                    $isSyncActive = true;
                 }
 
 
@@ -196,6 +206,15 @@ function mobo_core_sync_page()
             $productLeft = intval($productLeft);
         }
         $productLeft = intval($productLeft);
+
+        if (wp_next_scheduled('mobo_core_sync_products_event')) {
+            $isSyncActive = true;
+        }
+        else{
+            $isSyncActive = false;
+        }
+
+        
 ?>
         <p>
             <?php echo $info['message']; ?>
@@ -206,7 +225,7 @@ function mobo_core_sync_page()
         <div>
             وضعیت همگام سازی :
             <?php
-            if (!wp_next_scheduled('mobo_core_sync_products_event')) {
+            if (!$isSyncActive) {
                 echo '<span style="color:red">غیر فعال</span>';
             } else {
                 echo '<span style="color:green">فعال</span>';
@@ -254,6 +273,7 @@ function mobo_core_sync_page()
 
         <hr />
 
+        <?php if(!$isSyncActive) { ?>
         <form method="post" action="">
             <input type="hidden" name="mobo_core_sync_categories" value="mobo_core_sync_categories" />
             <?php wp_nonce_field('mobo_core_sync_categories_nounce'); ?>
@@ -261,9 +281,9 @@ function mobo_core_sync_page()
 
             <?php submit_button('همگام سازی'); ?>
         </form>
+        <?php } ?>
 
-        <hr />
-
+        <?php if($isSyncActive) { ?>
         <form method="post" action="">
             <input type="hidden" name="mobo_core_sync_stop" value="mobo_core_sync_stop" />
             <?php wp_nonce_field('mobo_core_sync_stop_nounce'); ?>
@@ -271,6 +291,7 @@ function mobo_core_sync_page()
 
             <?php submit_button('توقف همگام سازی'); ?>
         </form>
+        <?php } ?>
     <?php
     } else {
     ?>
