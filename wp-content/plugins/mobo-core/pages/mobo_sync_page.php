@@ -220,7 +220,7 @@ function mobo_core_sync_page()
             $intervals = $productLeft / intval($mobo_core_page_size);
             $totalTimeInSeconds = $intervals * 40;
             $minutes = floor($totalTimeInSeconds / 60);
-            $seconds = $totalTimeInSeconds % 60;
+            $seconds = round($totalTimeInSeconds % 60);
 
             ?>
             تعداد محصول همگام سازی شده : <?php echo $productLeft; ?>
