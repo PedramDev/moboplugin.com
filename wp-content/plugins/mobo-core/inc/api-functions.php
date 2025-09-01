@@ -66,6 +66,7 @@ class ApiFunctions
     public function getProductsAsJson($pageNumber, $recordPerPage, $onlyInStock)
     {
         $productsArray = $this->fetch_data_from_api($this->base_url . "get-products?PageNumber=$pageNumber&RecordPerPage=$recordPerPage&onlyInStock=$onlyInStock");
+        // $productsArray = $this->fetch_data_from_api($this->base_url . "get-products-test?ProductPortalId=175026861");
         return $productsArray;
     }
 
