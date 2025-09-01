@@ -8,6 +8,7 @@ if (!defined('ABSPATH')) {
 // Admin page function
 function mobo_core_admin_page()
 {
+    $site_url = get_option('siteurl');
     $max_dynamic = 5;
     // Check if the form is submitted
     $message = '';
@@ -26,6 +27,7 @@ function mobo_core_admin_page()
 
         $global_product_auto_compare_price = isset($_POST['global_product_auto_compare_price']) ? 1 : 0;
         $global_update_categories = isset($_POST['global_update_categories']) ? 1 : 0;
+        $global_update_images = isset($_POST['global_update_images']) ? 1 : 0;
 
 
         update_option('mobo_core_only_in_stock', $mobo_core_only_in_stock);
@@ -38,6 +40,7 @@ function mobo_core_admin_page()
 
         update_option('global_product_auto_compare_price', $global_product_auto_compare_price);
         update_option('global_update_categories', $global_update_categories);
+        update_option('global_update_images', $global_update_images);
 
         $message = '<div class="updated"><p>تنظیمات موبوکور ذخیره شده</p></div>';
     } else {
@@ -51,6 +54,7 @@ function mobo_core_admin_page()
 
         $global_product_auto_compare_price = get_option('global_product_auto_compare_price');
         $global_update_categories = get_option('global_update_categories');
+        $global_update_images = get_option('global_update_images');
         
     }
 
@@ -127,7 +131,7 @@ function mobo_core_admin_page()
                         Common Settings : Once Per Minute(* * * * *)
                     </bdi>
                     <br>
-                    <code dir="ltr">wget -q -O - https://yourwebsite.com/wp-cron.php?doing_wp_cron >/dev/null 2>&1</code>
+                    <code dir="ltr">wget -q -O - <?php echo $site_url; ?>/wp-cron.php?doing_wp_cron >/dev/null 2>&1</code>
                 </p>
 
 
@@ -139,37 +143,12 @@ function mobo_core_admin_page()
                 <input type="text" style="font-family:'Courier New', Courier, monospace;" dir="ltr" name="SecurityCode" id="SecurityCode" value="<?php echo get_option('mobo_core_security_code'); ?>" />
 
                 <p>
-                    در صورتی که htacess شما خالی باشد، وب هوک شما میشود:
+                    <br>
+                    روی لینک زیر کلیک کنید اگر در سایت شما Success نمایش داد همین لینک را برای وب هوک به پشتیبان بدهید
                     <br>
                     <code dir="ltr">
-                        https://yourwebsite.com/index.php?rest_route=/mobo-core/v1/webhook
+                        <a href="<?php echo $site_url; ?>/index.php?rest_route=/mobo-core/v1/webhook-test"><?php echo $site_url; ?>/index.php?rest_route=/mobo-core/v1/webhook</a>
                     </code>
-                    <br>
-                    <hr>
-                    <br>
-                    در صورتی که htaccess شما مقادیر پیشفرض وردپرس رو داشته باشد میشود:
-                    <br>
-                    <code dir="ltr">
-                        https://yourwebsite.com/wp-json/mobo-core/v1/webhook
-                    </code>
-                </p>
-
-                <p>
-                    پیشفضرض وردپرس:
-                    <pre dir="ltr">
-<code>
-# BEGIN WordPress
-&lt;IfModule mod_rewrite.c&gt;
-RewriteEngine On
-RewriteBase /
-RewriteRule ^index\.php$ - [L]
-RewriteCond %{REQUEST_FILENAME} !-f
-RewriteCond %{REQUEST_FILENAME} !-d
-RewriteRule . /index.php [L]
-&lt;/IfModule&gt;
-# END WordPress
-</code>
-                    </pre>
                 </p>
 
                 <hr />
@@ -201,8 +180,13 @@ RewriteRule . /index.php [L]
                 </label>
 
                 <label>
-                    <input type="checkbox" name="global_update_categories" value="1" <?php checked($global_update_categories, '1'); ?>> آپدیت اتوماتیک دسته بندی ها
+                    <input type="checkbox" name="global_update_categories" value="1" <?php checked($global_update_categories, '1'); ?>> آپدیت اتوماتیک دسته بندی های محصول
                 </label>
+                
+                <label>
+                    <input type="checkbox" name="global_update_images" value="1" <?php checked($global_update_images, '1'); ?>> آپدیت اتوماتیک عکس ها محصول
+                </label>
+                
 
                 <input type="submit" name="save_mobo_core_settings" value="ذخیره تنظیمات اصلی" class="button button-primary" />
             </form>

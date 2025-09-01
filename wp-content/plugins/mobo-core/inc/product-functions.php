@@ -281,7 +281,10 @@ class WooCommerceProductManager
             $wp_product_id = $result['product']->save();
             $result['product']->update_meta_data('product_guid', $product_id); // Store GUID
 
-            $this->handle_images($result['product'], $images);
+
+            if ($result['isNew'] || $auto_options['global_update_images'] == '1') {
+                $this->handle_images($result['product'], $images);
+            }
             $this->update_attributes($result['product'], $attributes, $wp_product_id);
             $this->update_variants($result['product'], $variants, $auto_options, $wp_product_id);
 
@@ -620,6 +623,7 @@ class WooCommerceProductManager
             'global_product_auto_compare_price',
             'global_product_auto_slug',
             'global_update_categories',
+            'global_update_images',
 
             'mobo_price_type',
             'global_additional_price',

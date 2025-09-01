@@ -8,6 +8,21 @@ add_action('rest_api_init', function () {
     ));
 });
 
+
+add_action('rest_api_init', function () {
+    register_rest_route('mobo-core/v1', '/webhook-test', array(
+        'methods' => 'GET',
+        'callback' => 'mobo_core_webhook_test_handler',
+        'permission_callback' => '__return_true'
+    ));
+});
+
+
+function mobo_core_webhook_test_handler(WP_REST_Request $request) {
+    return new WP_REST_Response('Success', 200);
+    exit;
+}
+
 function mobo_core_webhook_handler(WP_REST_Request $request) {
 
     $data = $request->get_json_params();
