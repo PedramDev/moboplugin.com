@@ -2,7 +2,7 @@
 /*
 Plugin Name: mobo-core
 Description: بروزرسانی خودکار محصولات از https://mobomobo.ir/
-Version: 2.8
+Version: 2.9
 Author: Pedram Karimi
 Author URI: http://github.com/PedramDev/
 // Requires PHP: <=8.1.0
@@ -22,6 +22,12 @@ define('MOBO_CORE_PLUGIN_URL', plugin_dir_url(__FILE__));
 require  __DIR__ . '/inc/index.php';
 require  __DIR__ . '/pages/index.php';
 
+
+function trace_log() {
+    $backtrace = debug_backtrace();
+    $caller = $backtrace[0];
+    error_log('Error in file: ' . basename($caller['file']) . ' on line: ' . $caller['line']);
+}
 
 add_filter('http_request_args', function ($args) {
     $args['sslverify'] = false;

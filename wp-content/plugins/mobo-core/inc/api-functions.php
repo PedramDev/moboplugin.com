@@ -22,6 +22,11 @@ class ApiFunctions
 
         // Check for errors
         if (\is_wp_error($response)) {
+            
+            error_log('error in response:get-products-count :');
+            error_log($url);
+            error_log(print_r($response));
+            error_log(print_r($args));
             return false;
         }
 
@@ -38,7 +43,7 @@ class ApiFunctions
         return $data; // Return the data or process it as needed
     }
 
-    public function getProductsCount()
+    public function getProductsCount($onlyInStock)
     {
         $token = get_option('mobo_core_token');
 
@@ -49,11 +54,15 @@ class ApiFunctions
             ],
         ];
 
+        $onlyInStock = $onlyInStock == '1' ? 'true' : null;
+
         // Make a GET request
-        $response = \wp_remote_get($this->base_url . 'get-products-count', $args);
+        $response = \wp_remote_get($this->base_url . "get-products-count?onlyInStock=$onlyInStock", $args);
 
         // Check for errors
         if (is_wp_error($response)) {
+            error_log('error in response:get-products-count :');
+            error_log(print_r($response));
             return false;
         }
 
@@ -65,6 +74,8 @@ class ApiFunctions
 
     public function getProductsAsJson($pageNumber, $recordPerPage, $onlyInStock)
     {
+        $onlyInStock = $onlyInStock == '1' ? 'true' : null;
+
         $productsArray = $this->fetch_data_from_api($this->base_url . "get-products?PageNumber=$pageNumber&RecordPerPage=$recordPerPage&onlyInStock=$onlyInStock");
         // $productsArray = $this->fetch_data_from_api($this->base_url . "get-products-test?ProductPortalId=175026861");
         return $productsArray;

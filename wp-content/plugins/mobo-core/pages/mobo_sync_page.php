@@ -8,6 +8,7 @@ if (!defined('ABSPATH')) {
 
 function mobo_core_sync_categories()
 {
+    trace_log();
     $lockFile = sys_get_temp_dir() . '/mobo_cats_sync_lock'; // Temporary lock file path
 
     // Check if the lock file exists
@@ -15,11 +16,16 @@ function mobo_core_sync_categories()
         add_action('admin_notices', function () {
             echo '<div class="error"><p>عملیات هم‌زمان مجاز نیست.</p></div>';
         });
+        error_log('عملیات هم‌زمان مجاز نیست.');
         return; // Exit if the function is already running
     }
 
     // Create a lock file
-    file_put_contents($lockFile, "locked");
+    $lockCreated = file_put_contents($lockFile, "locked");
+    if ($lockCreated == false) {
+        trace_log();
+    }
+    trace_log();
 
     try {
 
@@ -28,28 +34,38 @@ function mobo_core_sync_categories()
         $categoriesDataJson = $apiFunc->getCategoriesAsJson();
         $catFunc = new \MoboCore\WooCommerceCategoryManager();
         $catFunc->addOrUpdateAllCategories($categoriesDataJson);
+        trace_log();
     } finally {
         // Remove the lock file
+        trace_log();
+        if (file_exists($lockFile))
         unlink($lockFile);
+        trace_log();
     }
 }
 
 function mobo_core_sync_products()
 {
     $lockFile = sys_get_temp_dir() . '/mobo_prod_sync_lock'; // Temporary lock file path
+    trace_log();
 
     // Check if the lock file exists
     if (file_exists($lockFile)) {
         add_action('admin_notices', function () {
             echo '<div class="error"><p>عملیات هم‌زمان مجاز نیست.</p></div>';
         });
+        trace_log();
         return; // Exit if the function is already running
     }
 
     // Create a lock file
-    file_put_contents($lockFile, "locked");
+    $lockCreated = file_put_contents($lockFile, "locked");
+    if ($lockCreated == false) {
+        trace_log();
+    }
 
     try {
+        trace_log();
 
         $apiFunc = new \MoboCore\ApiFunctions(); // Replace with your API function class
         $productFunc = new \MoboCore\WooCommerceProductManager(); // Replace with your product function class
@@ -59,10 +75,12 @@ function mobo_core_sync_products()
         $productLeft = get_option('mobo_sync_product_left', null);
         $mobo_core_page_size = intval(get_option('mobo_core_page_size', 5));
         $onlyInStock = intval(get_option('mobo_core_only_in_stock', true));
+        trace_log();
 
         if (is_null($productLeft)) {
+            trace_log();
             // Initial setup
-            $totalCount =  $apiFunc->getProductsCount();
+            $totalCount =  $apiFunc->getProductsCount($onlyInStock);
             if ($totalCount === false) {
                 add_action('admin_notices', function () {
                     echo '<div class="error"><p>خطا در دریافت تعداد محصولات</p></div>';
@@ -73,13 +91,16 @@ function mobo_core_sync_products()
 
             $productLeft = $totalCount;
             update_option('mobo_sync_product_left', $productLeft);
+            trace_log();
         } else {
             $productLeft = intval($productLeft);
+            trace_log();
         }
 
 
         // Process products
         if ($productLeft > 0) {
+            trace_log();
             $productsDataJson = $apiFunc->getProductsAsJson($page, $mobo_core_page_size, $onlyInStock);
             if ($productsDataJson === false) {
                 add_action('admin_notices', function () {
@@ -87,7 +108,10 @@ function mobo_core_sync_products()
                 });
                 return;
             }
+            trace_log();
+
             $productFunc->update_product($productsDataJson);
+            trace_log();
 
             // Update counters
             $productLeft -= $mobo_core_page_size;
@@ -96,15 +120,21 @@ function mobo_core_sync_products()
             // Update options
             update_option('mobo_sync_page', $page);
             update_option('mobo_sync_product_left', $productLeft);
+            trace_log();
         }
 
         // Cleanup after completion
         if ($productLeft <= 0) {
+            trace_log();
             mobo_core_sync_stop();
+            trace_log();
         }
     } finally {
         // Remove the lock file
+        trace_log();
+        if (file_exists($lockFile))
         unlink($lockFile);
+        trace_log();
     }
 }
 
@@ -114,6 +144,7 @@ add_action('mobo_core_sync_categories_event', 'mobo_core_sync_categories');
 
 function mobo_core_sync_stop()
 {
+    trace_log();
     delete_option('mobo_sync_page');
     delete_option('mobo_sync_product_left');
     wp_clear_scheduled_hook('mobo_core_sync_products_event');
@@ -124,11 +155,23 @@ function mobo_core_sync_stop()
 
     global $isSyncActive;
     $isSyncActive = false;
+    $lockFile1 = sys_get_temp_dir() . '/mobo_prod_sync_lock'; // Temporary lock file path
+    $lockFile2 = sys_get_temp_dir() . '/mobo_cats_sync_lock'; // Temporary lock file path
+
+    if (file_exists($lockFile1))
+        unlink($lockFile1);
+    if (file_exists($lockFile2))
+        unlink($lockFile2);
+
+    trace_log();
 }
+
 
 // Admin page function
 function mobo_core_sync_page()
 {
+    trace_log();
+
     $apiFunc = new \MoboCore\ApiFunctions(); // Replace with your API function class
     $info = $apiFunc->getLicenseInfo();
     $page = intval(get_option('mobo_sync_page', 1));
@@ -155,9 +198,13 @@ function mobo_core_sync_page()
 
                 $apiFunc = new \MoboCore\ApiFunctions();
 
-                $categoriesDataJson = $apiFunc->getCategoriesAsJson();
-                $catFunc = new \MoboCore\WooCommerceCategoryManager();
-                $catFunc->addOrUpdateAllCategories($categoriesDataJson);
+                $mobo_default_category_id = get_option('mobo_default_category_id');
+                if(isset($mobo_default_category_id) && !empty($mobo_default_category_id)){
+                    $categoriesDataJson = $apiFunc->getCategoriesAsJson();
+                    $catFunc = new \MoboCore\WooCommerceCategoryManager();
+                    $catFunc->addOrUpdateAllCategories($categoriesDataJson);
+                }
+
 
                 if (!$isSyncActive) {
                     wp_schedule_event(time(), 'mobo_core_product_interval', 'mobo_core_sync_products_event');
@@ -183,6 +230,8 @@ function mobo_core_sync_page()
                 update_option('mobo_sync_page', $page);
 
                 $mobo_core_page_size = $_POST['mobo_core_page_size'];
+                mobo_core_sync_stop();
+
             } else if (isset($_POST['mobo_core_sync_stop'])) {
                 check_admin_referer('mobo_core_sync_stop_nounce');
                 mobo_core_sync_stop();
@@ -191,7 +240,8 @@ function mobo_core_sync_page()
 
         if (is_null($productLeft) || $productLeft == false) {
             // Initial setup
-            $totalCount =  $apiFunc->getProductsCount();
+            $onlyInStock = intval(get_option('mobo_core_only_in_stock', true));
+            $totalCount =  $apiFunc->getProductsCount($onlyInStock);
             if ($totalCount === false) {
                 add_action('admin_notices', function () {
                     echo '<div class="error"><p>خطا در دریافت تعداد محصولات</p></div>';
@@ -209,12 +259,11 @@ function mobo_core_sync_page()
 
         if (wp_next_scheduled('mobo_core_sync_products_event')) {
             $isSyncActive = true;
-        }
-        else{
+        } else {
             $isSyncActive = false;
         }
 
-        
+
 ?>
         <p>
             <?php echo $info['message']; ?>
@@ -238,11 +287,11 @@ function mobo_core_sync_page()
             <?php
             $intervals = $productLeft / intval($mobo_core_page_size);
             $totalTimeInSeconds = $intervals * 40;
-            $minutes = floor($totalTimeInSeconds / 60);
+            $minutes = round(floor($totalTimeInSeconds / 60));
             $seconds = round($totalTimeInSeconds % 60);
 
             ?>
-            تعداد محصول همگام سازی شده : <?php echo $productLeft; ?>
+            تعداد محصول همگام سازی نشده : <?php echo $productLeft; ?>
             <br />
             زمان تقریبی پایان همگام سازی : <?php echo $minutes; ?> دقیقه و <?php echo $seconds; ?> ثانیه
         </p>
@@ -273,24 +322,24 @@ function mobo_core_sync_page()
 
         <hr />
 
-        <?php if(!$isSyncActive) { ?>
-        <form method="post" action="">
-            <input type="hidden" name="mobo_core_sync_categories" value="mobo_core_sync_categories" />
-            <?php wp_nonce_field('mobo_core_sync_categories_nounce'); ?>
+        <?php if (!$isSyncActive) { ?>
+            <form method="post" action="">
+                <input type="hidden" name="mobo_core_sync_categories" value="mobo_core_sync_categories" />
+                <?php wp_nonce_field('mobo_core_sync_categories_nounce'); ?>
 
 
-            <?php submit_button('همگام سازی'); ?>
-        </form>
+                <?php submit_button('همگام سازی'); ?>
+            </form>
         <?php } ?>
 
-        <?php if($isSyncActive) { ?>
-        <form method="post" action="">
-            <input type="hidden" name="mobo_core_sync_stop" value="mobo_core_sync_stop" />
-            <?php wp_nonce_field('mobo_core_sync_stop_nounce'); ?>
+        <?php if ($isSyncActive) { ?>
+            <form method="post" action="">
+                <input type="hidden" name="mobo_core_sync_stop" value="mobo_core_sync_stop" />
+                <?php wp_nonce_field('mobo_core_sync_stop_nounce'); ?>
 
 
-            <?php submit_button('توقف همگام سازی'); ?>
-        </form>
+                <?php submit_button('توقف همگام سازی'); ?>
+            </form>
         <?php } ?>
     <?php
     } else {

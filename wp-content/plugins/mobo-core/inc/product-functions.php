@@ -352,7 +352,14 @@ class WooCommerceProductManager
         }
 
         if ($isNew || $auto_options['global_update_categories'] == '1') {
-            $product->set_category_ids($wp_category_ids);
+            
+            $mobo_default_category_id = get_option('mobo_default_category_id');
+            if(isset($mobo_default_category_id) && !empty($mobo_default_category_id)){
+                $product->set_category_ids([$mobo_default_category_id]);
+            }
+            else{
+                $product->set_category_ids($wp_category_ids);
+            }
         }
     }
 

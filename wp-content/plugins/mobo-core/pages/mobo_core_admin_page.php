@@ -15,6 +15,8 @@ function mobo_core_admin_page()
     if (isset($_POST['save_mobo_core_settings'])) {
         update_option('mobo_core_token', trim($_POST['token']));
         update_option('mobo_core_security_code', trim($_POST['SecurityCode']));
+        
+        $mobo_default_category_id = trim($_POST['mobo_default_category_id']);
 
         $mobo_core_only_in_stock = isset($_POST['mobo_core_only_in_stock']) ? 1 : 0;
 
@@ -42,6 +44,9 @@ function mobo_core_admin_page()
         update_option('global_update_categories', $global_update_categories);
         update_option('global_update_images', $global_update_images);
 
+        update_option('mobo_default_category_id', $mobo_default_category_id);
+
+
         $message = '<div class="updated"><p>تنظیمات موبوکور ذخیره شده</p></div>';
     } else {
         $mobo_core_only_in_stock = intval(get_option('mobo_core_only_in_stock', true));
@@ -56,6 +61,8 @@ function mobo_core_admin_page()
         $global_update_categories = get_option('global_update_categories');
         $global_update_images = get_option('global_update_images');
         
+        $mobo_default_category_id = get_option('mobo_default_category_id');
+
     }
 
     if (isset($_POST['save_mobo_core_price'])) {
@@ -186,7 +193,16 @@ function mobo_core_admin_page()
                 <label>
                     <input type="checkbox" name="global_update_images" value="1" <?php checked($global_update_images, '1'); ?>> آپدیت اتوماتیک عکس ها محصول
                 </label>
+
                 
+                <label for="mobo_default_category_id">
+                    دسته بندی پیشفرض
+                    <input type="text" style="font-family:'Courier New', Courier, monospace;" dir="ltr" name="mobo_default_category_id" id="mobo_default_category_id" value="<?php echo get_option('mobo_default_category_id'); ?>" />
+                    <small>
+                        در صورتی که نیاز دارید محصولات جدید در دسته ای مشخص لیست شوند - شناسه دسته مورد نظر را در این قسمت قرار دهید
+                    </small>
+                </label>
+
 
                 <input type="submit" name="save_mobo_core_settings" value="ذخیره تنظیمات اصلی" class="button button-primary" />
             </form>
