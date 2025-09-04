@@ -42,7 +42,7 @@ function mobo_core_webhook_handler(WP_REST_Request $request) {
     // Handle the request data
     $data = $request->get_json_params();
     // Process the data...
-    switch($data['type']){
+    switch($data['event']){
         case 'ProductUpdated';
             $productFunc->webhook_update_product($data);
             break;
