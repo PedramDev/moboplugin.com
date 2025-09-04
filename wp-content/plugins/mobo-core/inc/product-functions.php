@@ -261,7 +261,7 @@ class WooCommerceProductManager
 
         foreach ($data['data'] as $product_data) {
             $product_id = $product_data['productId'];
-            $stock = $product_data['stock'] ?? 0;
+            $stock = $product_data['stock'];
             $price = $product_data['price'];
             $title = $product_data['title'];
             $caption = $product_data['caption'];
@@ -346,6 +346,9 @@ class WooCommerceProductManager
         }
 
         if ($isNew || $auto_options['global_product_auto_stock'] == '1') {
+            if($isNew && $auto_options['mobo_core_only_in_stock']== '1' && $stock <= 0){
+                return;
+            }
             $product->set_manage_stock(true);
             $product->set_stock_quantity($stock == null ? 9999 : $stock);
             $product->set_stock_status(($stock > 0 || $stock == null) ? 'instock' : 'outofstock');
@@ -632,6 +635,7 @@ class WooCommerceProductManager
             'global_update_categories',
             'global_update_images',
 
+            'mobo_core_only_in_stock',
             'mobo_price_type',
             'global_additional_price',
             'global_additional_percentage',
