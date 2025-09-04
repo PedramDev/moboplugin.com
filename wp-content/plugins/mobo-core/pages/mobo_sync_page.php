@@ -29,17 +29,21 @@ function mobo_core_sync_categories()
 
     try {
 
-        $apiFunc = new \MoboCore\ApiFunctions();
+        $global_update_categories = get_option('global_update_categories');
 
-        $categoriesDataJson = $apiFunc->getCategoriesAsJson();
-        $catFunc = new \MoboCore\WooCommerceCategoryManager();
-        $catFunc->addOrUpdateAllCategories($categoriesDataJson);
+        if ($global_update_categories == '1') {
+            $apiFunc = new \MoboCore\ApiFunctions();
+            $categoriesDataJson = $apiFunc->getCategoriesAsJson();
+            $catFunc = new \MoboCore\WooCommerceCategoryManager();
+            $catFunc->addOrUpdateAllCategories($categoriesDataJson);
+            trace_log();
+        }
         trace_log();
     } finally {
         // Remove the lock file
         trace_log();
         if (file_exists($lockFile))
-        unlink($lockFile);
+            unlink($lockFile);
         trace_log();
     }
 }
@@ -133,7 +137,7 @@ function mobo_core_sync_products()
         // Remove the lock file
         trace_log();
         if (file_exists($lockFile))
-        unlink($lockFile);
+            unlink($lockFile);
         trace_log();
     }
 }
@@ -198,8 +202,8 @@ function mobo_core_sync_page()
 
                 $apiFunc = new \MoboCore\ApiFunctions();
 
-                $mobo_default_category_id = get_option('mobo_default_category_id');
-                if(isset($mobo_default_category_id) && !empty($mobo_default_category_id)){
+                $global_update_categories = get_option('global_update_categories');
+                if ($global_update_categories == '1') {
                     $categoriesDataJson = $apiFunc->getCategoriesAsJson();
                     $catFunc = new \MoboCore\WooCommerceCategoryManager();
                     $catFunc->addOrUpdateAllCategories($categoriesDataJson);
@@ -231,7 +235,6 @@ function mobo_core_sync_page()
 
                 $mobo_core_page_size = $_POST['mobo_core_page_size'];
                 mobo_core_sync_stop();
-
             } else if (isset($_POST['mobo_core_sync_stop'])) {
                 check_admin_referer('mobo_core_sync_stop_nounce');
                 mobo_core_sync_stop();

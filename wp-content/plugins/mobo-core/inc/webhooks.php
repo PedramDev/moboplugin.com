@@ -26,12 +26,14 @@ function mobo_core_webhook_test_handler(WP_REST_Request $request) {
 function mobo_core_webhook_handler(WP_REST_Request $request) {
 
     $data = $request->get_json_params();
-    $security_code = $data['securityCode'];
+
+    // Retrieve the X-SEC header
+    $security_code = $request->get_header('X-SEC');
 
     // Define your expected secret code
     $expected_secret_code = get_option('mobo_core_security_code');
 
-    if ($security_code !== $expected_secret_code) {
+    if ($security_code != $expected_secret_code) {
         return new WP_REST_Response('Unauthorized', 401);
         exit;
     }
