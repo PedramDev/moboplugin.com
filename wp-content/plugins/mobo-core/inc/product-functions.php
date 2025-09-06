@@ -321,9 +321,11 @@ class WooCommerceProductManager
         if (!empty($existing_products)) {
             $result['product'] = \wc_get_product($existing_products[0]->ID);
             $result['isNew'] = false;
+            $result['product']->set_date_modified( current_time( 'mysql' ) );
         } else {
             $result['isNew'] = true;
             $result['product'] = !empty($attributes) ? new \WC_Product_Variable() : new \WC_Product();
+            $result['product']->set_date_created(current_time( 'mysql' ));
         }
 
         return $result;
