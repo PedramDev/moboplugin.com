@@ -271,12 +271,13 @@ class WooCommerceProductManager
             $attributes = $product_data['attributes'];
             $variants = $product_data['variants'];
             $images = $product_data['images'];
+            $publishDate = $product_data['publishedAt'];
 
             $wp_category_ids = $this->prepare_categories($categories);
 
             $result = $this->get_or_create_product($product_id, $attributes);
 
-            $this->set_product_details($result['product'], $result['isNew'], $product_url, $title, $caption, $price, $comparePrice, $stock, $auto_options, $wp_category_ids);
+            $this->set_product_details($result['product'], $result['isNew'], $product_url, $title, $caption, $price, $comparePrice, $stock, $auto_options, $wp_category_ids, $publishDate);
 
             $wp_product_id = $result['product']->save();
             $result['product']->update_meta_data('product_guid', $product_id); // Store GUID
@@ -317,21 +318,20 @@ class WooCommerceProductManager
             'posts_per_page' => 1,
         ];
 
+
         $existing_products = \get_posts($args);
         if (!empty($existing_products)) {
             $result['product'] = \wc_get_product($existing_products[0]->ID);
             $result['isNew'] = false;
-            $result['product']->set_date_modified( current_time( 'mysql' ) );
         } else {
             $result['isNew'] = true;
             $result['product'] = !empty($attributes) ? new \WC_Product_Variable() : new \WC_Product();
-            $result['product']->set_date_created(current_time( 'mysql' ));
         }
 
         return $result;
     }
 
-    private function set_product_details($product, $isNew, $product_url, $title, $caption, $price, $comparePrice, $stock, $auto_options, $wp_category_ids)
+    private function set_product_details($product, $isNew, $product_url, $title, $caption, $price, $comparePrice, $stock, $auto_options, $wp_category_ids, $publishedAt)
     {
         if ($isNew || $auto_options['global_product_auto_title'] == '1') {
             $product->set_name($title);
@@ -363,6 +363,22 @@ class WooCommerceProductManager
                 $product->set_category_ids([$mobo_default_category_id]);
             } else {
                 $product->set_category_ids($wp_category_ids);
+            }
+        }
+
+        if ($isNew) {
+            if (isset($publishedAt) && !empty($publishedAt)) {
+                $date_time = \DateTime::createFromFormat('m/d/Y H:i:s', $publishedAt);
+                $product->set_date_created($date_time);
+            } else {
+                $product->set_date_created(current_time('mysql'));
+            }
+        } else {
+            if (isset($publishedAt) && !empty($publishedAt)) {
+                $date_time = \DateTime::createFromFormat('m/d/Y H:i:s', $publishedAt);
+                $product->set_date_modified($date_time);
+            } else {
+                $product->set_date_modified(current_time('mysql'));
             }
         }
     }

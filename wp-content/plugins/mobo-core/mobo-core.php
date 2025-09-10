@@ -6,7 +6,7 @@ Version: 3.6
 Author: Pedram Karimi
 Author URI: http://github.com/PedramDev/
 // Requires PHP: <=8.1.0
-Plugin URI: http://github.com/PedramDev/
+Plugin URI: https://github.com/PedramDev/moboplugin.com/releases/latest
 Requires WooCommerce: >=6.0
 */
 

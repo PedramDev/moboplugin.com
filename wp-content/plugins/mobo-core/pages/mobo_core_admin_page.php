@@ -151,10 +151,10 @@ function mobo_core_admin_page()
 
                 <p>
                     <br>
-                    روی لینک زیر کلیک کنید اگر در سایت شما Success نمایش داد همین لینک را برای وب هوک به پشتیبان بدهید
+                    وب هوک سایت شما:
                     <br>
                     <code dir="ltr">
-                        <a href="<?php echo $site_url; ?>/index.php?rest_route=/mobo-core/v1/webhook-test"><?php echo $site_url; ?>/index.php?rest_route=/mobo-core/v1/webhook</a>
+                        <a href="<?php echo $site_url; ?>/index.php?rest_route=/mobo-core/v1/webhook"><?php echo $site_url; ?>/index.php?rest_route=/mobo-core/v1/webhook</a>
                     </code>
                 </p>
 
