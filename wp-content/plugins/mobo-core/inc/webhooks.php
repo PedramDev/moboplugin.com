@@ -10,6 +10,7 @@ add_action('rest_api_init', function () {
 
 function mobo_core_webhook_handler(WP_REST_Request $request) {
 
+    trace_log();
     $data = $request->get_json_params();
 
     // Retrieve the X-SEC header
@@ -24,7 +25,8 @@ function mobo_core_webhook_handler(WP_REST_Request $request) {
     }
     $productFunc = new \MoboCore\WooCommerceProductManager(); // Replace with your product function class
 
-    
+    trace_log();
+    error_log(json_encode($request->get_json_params()));
 
     // Handle the request data
     $data = $request->get_json_params();

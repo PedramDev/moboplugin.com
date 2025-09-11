@@ -112,6 +112,7 @@ function mobo_core_sync_products()
                 });
                 return;
             }
+            error_log(print_r($productsDataJson));
             trace_log();
 
             $productFunc->update_product($productsDataJson);

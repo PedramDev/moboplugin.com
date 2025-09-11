@@ -22,7 +22,7 @@ class ApiFunctions
 
         // Check for errors
         if (\is_wp_error($response)) {
-            
+
             error_log('error in response:get-products-count :');
             error_log($url);
             error_log(print_r($response));
@@ -77,7 +77,7 @@ class ApiFunctions
         $onlyInStock = $onlyInStock == '1' ? 'true' : null;
 
         $productsArray = $this->fetch_data_from_api($this->base_url . "get-products?PageNumber=$pageNumber&RecordPerPage=$recordPerPage&onlyInStock=$onlyInStock");
-        // $productsArray = $this->fetch_data_from_api($this->base_url . "get-products-test?ProductPortalId=175026861");
+        // $productsArray = $this->fetch_data_from_api($this->base_url . "get-products-test?ProductPortalId=175244813");
         return $productsArray;
     }
 

@@ -2,7 +2,7 @@
 /*
 Plugin Name: mobo-core
 Description: بروزرسانی خودکار محصولات از https://mobomobo.ir/
-Version: 3.8
+Version: 4.0
 Author: Pedram Karimi
 Author URI: http://github.com/PedramDev/
 // Requires PHP: <=8.1.0
@@ -23,7 +23,8 @@ require  __DIR__ . '/inc/index.php';
 require  __DIR__ . '/pages/index.php';
 
 
-function trace_log() {
+function trace_log()
+{
     $backtrace = debug_backtrace();
     $caller = $backtrace[0];
     error_log('Error in file: ' . basename($caller['file']) . ' on line: ' . $caller['line']);
@@ -58,6 +59,10 @@ function mobo_core_admin_menu()
 add_filter('cron_schedules', 'custom_cron_schedule');
 function custom_cron_schedule($schedules)
 {
+    $schedules['mobo_core_product_sync_every_night_interval'] = array(
+        'interval' => 43200,
+        'display'  => 'Every 12H',
+    );
     $schedules['mobo_core_product_interval'] = array(
         'interval' => 40,
         'display'  => 'Every 40 sec',
@@ -68,6 +73,8 @@ function custom_cron_schedule($schedules)
     );
     return $schedules;
 }
+
+wp_schedule_event(time(), 'mobo_core_product_sync_every_night_interval', 'mobo_core_sync_products_event');
 
 
 function mobo_isLicenseExpired()

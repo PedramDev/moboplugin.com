@@ -253,13 +253,19 @@ class WooCommerceProductManager
     //fix
     private function process_product_data($data)
     {
+        trace_log();
         if (!$data) {
             return 'Invalid JSON data';
         }
 
         $auto_options = self::get_global_product_options();
+        trace_log();
+
+        error_log(print_r($data));
 
         foreach ($data['data'] as $product_data) {
+            trace_log();
+
             $product_id = $product_data['productId'];
             $stock = $product_data['stock'];
             $price = $product_data['price'];
@@ -272,24 +278,35 @@ class WooCommerceProductManager
             $variants = $product_data['variants'];
             $images = $product_data['images'];
             $publishDate = $product_data['publishedAt'];
+            trace_log();
 
             $wp_category_ids = $this->prepare_categories($categories);
+            trace_log();
 
             $result = $this->get_or_create_product($product_id, $attributes);
+            trace_log();
 
             $this->set_product_details($result['product'], $result['isNew'], $product_url, $title, $caption, $price, $comparePrice, $stock, $auto_options, $wp_category_ids, $publishDate);
+            trace_log();
 
             $wp_product_id = $result['product']->save();
             $result['product']->update_meta_data('product_guid', $product_id); // Store GUID
 
+            trace_log();
 
             if ($result['isNew'] || $auto_options['global_update_images'] == '1') {
                 $this->handle_images($result['product'], $images);
             }
+            trace_log();
             $this->update_attributes($result['product'], $attributes, $wp_product_id);
-            $this->update_variants($result['product'], $variants, $auto_options, $wp_product_id);
 
-            $wp_product_id = $result['product']->save();
+            $result['product']->save();
+
+            $this->update_variants($result['product'], $variants, $auto_options, $wp_product_id);
+            trace_log();
+
+            $result['product']->save();
+            trace_log();
         }
 
         return 'Products updated successfully';
@@ -505,7 +522,7 @@ class WooCommerceProductManager
                     $image_id = self::upload_image($image['url']);
                     if ($image_id) {
                         $image_ids[] = $image_id;
-                        \add_post_meta($image_id, 'img_guid', $image['id']);
+                        \update_post_meta($image_id, 'img_guid', $image['id']);
                     }
                 }
             }
@@ -544,11 +561,12 @@ class WooCommerceProductManager
 
     private function update_variants($product, $variants, $auto_options, $wp_product_id)
     {
+        trace_log();
         foreach ($variants as $variant) {
             $existing_variant_id = $this->get_existing_variant_id($product, $variant['variantId']);
             $variation = $existing_variant_id ? new \WC_Product_Variation($existing_variant_id) : new \WC_Product_Variation();
             $variation->set_parent_id($wp_product_id);
-
+            trace_log();
             $this->set_variant_details($existing_variant_id, $variation, $variant, $auto_options);
             $variation->save();
         }
@@ -566,6 +584,7 @@ class WooCommerceProductManager
 
     private function set_variant_details($existing_variant_id, $variation, $variant, $auto_options)
     {
+        trace_log();
         $this->set_variant_prices($existing_variant_id, $variation, $variant, $auto_options);
 
         if ($variant['stock'] == null) {
@@ -578,8 +597,12 @@ class WooCommerceProductManager
             $variation->set_stock_status($variant['stock'] > 0 ? 'instock' : 'outofstock');
         }
 
+        trace_log();
+
+        error_log(print_r($variant, true));
         foreach ($variant['attributes'] as $attribute) {
             $key = 'attribute_' . \sanitize_title($attribute['name']);
+            error_log("Updating $key with " . $attribute['option']);
             $variation->update_meta_data($key, $attribute['option']);
         }
         $variation->update_meta_data('variant_guid', $variant['variantId']);
