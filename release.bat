@@ -1,3 +1,3 @@
-git tag 3.8
-git push origin 3.8
-gh release create v3.8 --title "Mobo Core 3.8" --notes "Add product date with Mobo!"
+git tag 4.0
+git push origin 4.0
+gh release create v4.0 --title "Mobo Core 4.0" --notes "4.0"
