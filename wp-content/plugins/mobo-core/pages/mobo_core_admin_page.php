@@ -134,11 +134,15 @@ function mobo_core_admin_page()
                     <br>
                     توضیحات اضافه : در تمام سیستم های هاستینگ برای استفاده صحیح از منابع ، در صورتی که درخواستی از بیرون به سیستم ارسال نشود - نرم افزار خاموش میشود، این کد نرم افزار شما را دوباره زنده میکند
                     <br>
+                    <br>
+                    لطفا فقط یکی از کرون جاب ها را درج کنید
                     <bdi dir="ltr">
                         Common Settings : Once Per Minute(* * * * *)
                     </bdi>
                     <br>
                     <code dir="ltr">wget -q -O - <?php echo $site_url; ?>/wp-cron.php?doing_wp_cron >/dev/null 2>&1</code>
+                    <br>
+                    <code dir="ltr">/usr/local/bin/curl --silent -L "<?php echo $site_url; ?>/wp-cron.php?doing_wp_cron" >/dev/null 2>&1</code>
                 </p>
 
 
