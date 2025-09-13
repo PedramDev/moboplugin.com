@@ -1,3 +1,6 @@
-git tag 4.1
-git push origin 4.1
-gh release create v4.0 --title "Mobo Core 4.1" --notes "4.1"
+@echo off
+set VERSION=4.2
+git tag %VERSION%
+git push origin %VERSION%
+gh release create v%VERSION% --title "Mobo Core %VERSION%" --notes "%VERSION%"
+pause
