@@ -369,8 +369,8 @@ class WooCommerceProductManager
                 return;
             }
             $product->set_manage_stock(true);
-            $product->set_stock_quantity($stock == null ? 9999 : $stock);
-            $product->set_stock_status(($stock > 0 || $stock == null) ? 'instock' : 'outofstock');
+            $product->set_stock_quantity($stock === null ? 9999 : $stock);
+            $product->set_stock_status(($stock > 0 || $stock === null) ? 'instock' : 'outofstock');
         }
 
         if ($isNew || $auto_options['global_update_categories'] == '1') {
@@ -587,7 +587,7 @@ class WooCommerceProductManager
         trace_log();
         $this->set_variant_prices($existing_variant_id, $variation, $variant, $auto_options);
 
-        if ($variant['stock'] == null) {
+        if ($variant['stock'] === null) {
             $variation->set_stock_quantity(9999);
             $variation->set_manage_stock(true);
             $variation->set_stock_status('instock');
