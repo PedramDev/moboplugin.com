@@ -261,7 +261,7 @@ class WooCommerceProductManager
         $auto_options = self::get_global_product_options();
         trace_log();
 
-        error_log(print_r($data));
+        trace_log(print_r($data));
 
         foreach ($data['data'] as $product_data) {
             trace_log();
@@ -286,7 +286,11 @@ class WooCommerceProductManager
             $result = $this->get_or_create_product($product_id, $attributes);
             trace_log();
 
-            $this->set_product_details($result['product'], $result['isNew'], $product_url, $title, $caption, $price, $comparePrice, $stock, $auto_options, $wp_category_ids, $publishDate);
+            $setProdDetailResult = $this->set_product_details($result['product'], $result['isNew'], $product_url, $title, $caption, $price, $comparePrice, $stock, $auto_options, $wp_category_ids, $publishDate);
+            if($setProdDetailResult == false){
+                trace_log('save product aborted!');
+                continue;
+            }
             trace_log();
 
             $wp_product_id = $result['product']->save();
@@ -366,7 +370,7 @@ class WooCommerceProductManager
 
         if ($isNew || $auto_options['global_product_auto_stock'] == '1') {
             if ($isNew && $auto_options['mobo_core_only_in_stock'] == '1' && $stock <= 0) {
-                return;
+                return false;
             }
             $product->set_manage_stock(true);
             $product->set_stock_quantity($stock === null ? 9999 : $stock);
@@ -398,6 +402,8 @@ class WooCommerceProductManager
                 $product->set_date_modified(current_time('mysql'));
             }
         }
+
+        return true;
     }
 
 
@@ -599,10 +605,10 @@ class WooCommerceProductManager
 
         trace_log();
 
-        error_log(print_r($variant, true));
+        trace_log(print_r($variant, true));
         foreach ($variant['attributes'] as $attribute) {
             $key = 'attribute_' . \sanitize_title($attribute['name']);
-            error_log("Updating $key with " . $attribute['option']);
+            trace_log("Updating $key with " . $attribute['option']);
             $variation->update_meta_data($key, $attribute['option']);
         }
         $variation->update_meta_data('variant_guid', $variant['variantId']);

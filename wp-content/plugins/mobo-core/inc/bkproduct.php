@@ -279,8 +279,8 @@
                             ];
                     }
 
-                    // error_log(print_r($attribute_data, true)); // Log attributes
-                    // error_log(print_r($variant_attributes, true)); // Log variant attributes
+                    // trace_log(print_r($attribute_data, true)); // Log attributes
+                    // trace_log(print_r($variant_attributes, true)); // Log variant attributes
 
                     $variation->update_meta_data('variant_guid', $variant['variantId']); // Store GUID
 
@@ -292,7 +292,7 @@
 
                     $variation->save();
 
-                    // error_log(print_r($variation->get_attributes(), true)); // Log variation attributes after saving
+                    // trace_log(print_r($variation->get_attributes(), true)); // Log variation attributes after saving
                 }
             }
 
@@ -583,8 +583,8 @@
                             ];
                     }
 
-                    // error_log(print_r($attribute_data, true)); // Log attributes
-                    // error_log(print_r($variant_attributes, true)); // Log variant attributes
+                    // trace_log(print_r($attribute_data, true)); // Log attributes
+                    // trace_log(print_r($variant_attributes, true)); // Log variant attributes
 
                     $variation->update_meta_data('variant_guid', $variant['variantId']); // Store GUID
 
@@ -596,7 +596,7 @@
 
                     $variation->save();
 
-                    // error_log(print_r($variation->get_attributes(), true)); // Log variation attributes after saving
+                    // trace_log(print_r($variation->get_attributes(), true)); // Log variation attributes after saving
                 }
             }
 

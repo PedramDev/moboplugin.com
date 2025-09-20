@@ -16,7 +16,7 @@ function mobo_core_sync_categories()
         add_action('admin_notices', function () {
             echo '<div class="error"><p>عملیات هم‌زمان مجاز نیست.</p></div>';
         });
-        error_log('عملیات هم‌زمان مجاز نیست.');
+        trace_log('عملیات هم‌زمان مجاز نیست.');
         return; // Exit if the function is already running
     }
 
@@ -112,7 +112,7 @@ function mobo_core_sync_products()
                 });
                 return;
             }
-            error_log(print_r($productsDataJson));
+            trace_log(print_r($productsDataJson));
             trace_log();
 
             $productFunc->update_product($productsDataJson);

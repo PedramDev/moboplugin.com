@@ -16,6 +16,8 @@ function mobo_core_admin_page()
         update_option('mobo_core_token', trim($_POST['token']));
         update_option('mobo_core_security_code', trim($_POST['SecurityCode']));
         
+        $mobo_active_debug = isset($_POST['mobo_active_debug']) ? 1 : 0;
+
         $mobo_default_category_id = trim($_POST['mobo_default_category_id']);
 
         $mobo_core_only_in_stock = isset($_POST['mobo_core_only_in_stock']) ? 1 : 0;
@@ -31,6 +33,7 @@ function mobo_core_admin_page()
         $global_update_categories = isset($_POST['global_update_categories']) ? 1 : 0;
         $global_update_images = isset($_POST['global_update_images']) ? 1 : 0;
 
+        update_option('mobo_active_debug', $mobo_active_debug);
 
         update_option('mobo_core_only_in_stock', $mobo_core_only_in_stock);
 
@@ -49,6 +52,9 @@ function mobo_core_admin_page()
 
         $message = '<div class="updated"><p>تنظیمات موبوکور ذخیره شده</p></div>';
     } else {
+        
+        $mobo_active_debug = intval(get_option('mobo_active_debug', false));
+
         $mobo_core_only_in_stock = intval(get_option('mobo_core_only_in_stock', true));
 
         $global_product_auto_stock = get_option('global_product_auto_stock');
@@ -161,6 +167,12 @@ function mobo_core_admin_page()
                         <a href="<?php echo $site_url; ?>/index.php?rest_route=/mobo-core/v1/webhook"><?php echo $site_url; ?>/index.php?rest_route=/mobo-core/v1/webhook</a>
                     </code>
                 </p>
+
+                <hr />
+
+                <label>
+                    <input type="checkbox" name="mobo_active_debug" value="1" <?php checked($mobo_active_debug, '1'); ?>> DEBUG
+                </label>
 
                 <hr />
 
