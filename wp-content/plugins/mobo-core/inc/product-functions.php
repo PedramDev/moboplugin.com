@@ -287,7 +287,7 @@ class WooCommerceProductManager
             trace_log();
 
             $setProdDetailResult = $this->set_product_details($result['product'], $result['isNew'], $product_url, $title, $caption, $price, $comparePrice, $stock, $auto_options, $wp_category_ids, $publishDate);
-            if($setProdDetailResult == false){
+            if ($setProdDetailResult == false) {
                 trace_log('save product aborted!');
                 continue;
             }
@@ -591,7 +591,13 @@ class WooCommerceProductManager
     private function set_variant_details($existing_variant_id, $variation, $variant, $auto_options)
     {
         trace_log();
-        $this->set_variant_prices($existing_variant_id, $variation, $variant, $auto_options);
+        
+        $is_new = $existing_variant_id == 0;
+        $auto_price = $auto_options['global_product_auto_price'] == '1';
+
+        if($is_new || $auto_price){
+            $this->set_variant_prices($existing_variant_id, $variation, $variant, $auto_options);
+        }
 
         if ($variant['stock'] === null) {
             $variation->set_stock_quantity(9999);
@@ -617,9 +623,11 @@ class WooCommerceProductManager
     private function set_variant_prices($existing_variant_id, $variation, $variant, $auto_options)
     {
         $auto_compare = $auto_options['global_product_auto_compare_price'];
+
         $price = $variant['price'];
 
         $newPrice = $variant['price'];
+
         if (isset($variant['comparePrice']) && $variant['comparePrice'] != null) {
             $newPrice = $variant['comparePrice'];
         }
@@ -627,6 +635,7 @@ class WooCommerceProductManager
         $additional_price = get_post_meta($existing_variant_id, 'mobo_additional_price', true);
         if (isset($additional_price) && !empty($additional_price)) {
             $additional_price = intval($additional_price);
+
 
             if (isset($comparePrice) && $auto_compare == '1') {
                 $variation->set_regular_price(intval($comparePrice) + $additional_price);

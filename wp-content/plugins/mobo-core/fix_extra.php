@@ -12,3 +12,7 @@
 #		HAVING COUNT(*) > 1
 #	)
 #);
+
+#DELETE FROM 20DfZ_posts WHERE post_type = 'product_variation' 
+#AND post_parent NOT IN 
+#    ( SELECT ID FROM 20DfZ_posts WHERE post_type = 'product' );
