@@ -369,7 +369,7 @@ class WooCommerceProductManager
         }
 
         if ($isNew || $auto_options['global_product_auto_stock'] == '1') {
-            if ($isNew && $auto_options['mobo_core_only_in_stock'] == '1' && $stock <= 0) {
+            if ($isNew && $auto_options['mobo_core_only_in_stock'] == '1' && $stock === 0) {
                 return false;
             }
             $product->set_manage_stock(true);
