@@ -9,7 +9,7 @@ if (!defined('ABSPATH')) {
 function mobo_core_sync_categories()
 {
     trace_log();
-    $lockFile = sys_get_temp_dir() . '/mobo_cats_sync_lock'; // Temporary lock file path
+    $lockFile = __DIR__ . '/temp/mobo_cats_sync_lock'; // Temporary lock file path
 
     // Check if the lock file exists
     if (file_exists($lockFile)) {
@@ -50,7 +50,7 @@ function mobo_core_sync_categories()
 
 function mobo_core_sync_products()
 {
-    $lockFile = sys_get_temp_dir() . '/mobo_prod_sync_lock'; // Temporary lock file path
+    $lockFile = __DIR__ . '/temp/mobo_prod_sync_lock'; // Temporary lock file path
     trace_log();
 
     // Check if the lock file exists
@@ -125,6 +125,7 @@ function mobo_core_sync_products()
             // Update options
             update_option('mobo_sync_page', $page);
             update_option('mobo_sync_product_left', $productLeft);
+            trace_log('mobo_sync_product_left:'.$productLeft);
             trace_log();
         }
 
@@ -152,19 +153,29 @@ function mobo_core_sync_stop()
     trace_log();
     delete_option('mobo_sync_page');
     delete_option('mobo_sync_product_left');
-    wp_clear_scheduled_hook('mobo_core_sync_products_event');
+    trace_log();
+
+    $timestamp = wp_next_scheduled('mobo_core_sync_products_event');
+    if ($timestamp) {
+        trace_log();
+        wp_unschedule_event($timestamp, 'mobo_core_sync_products_event');
+    }
+    trace_log();
 
     add_action('admin_notices', function () {
         echo '<div class="updated"><p>همگام سازی متوقف شد!</p></div>';
     });
+    trace_log();
 
     global $isSyncActive;
     $isSyncActive = false;
-    $lockFile1 = sys_get_temp_dir() . '/mobo_prod_sync_lock'; // Temporary lock file path
-    $lockFile2 = sys_get_temp_dir() . '/mobo_cats_sync_lock'; // Temporary lock file path
+    $lockFile1 = __DIR__ . '/temp/mobo_prod_sync_lock'; // Temporary lock file path
+    $lockFile2 = __DIR__ . '/temp/mobo_cats_sync_lock'; // Temporary lock file path
+    trace_log();
 
     if (file_exists($lockFile1))
         unlink($lockFile1);
+    trace_log();
     if (file_exists($lockFile2))
         unlink($lockFile2);
 
@@ -179,14 +190,25 @@ function mobo_core_sync_page()
 
     $apiFunc = new \MoboCore\ApiFunctions(); // Replace with your API function class
     $info = $apiFunc->getLicenseInfo();
-    $page = intval(get_option('mobo_sync_page', 1));
-    $productLeft = get_option('mobo_sync_product_left', null);
-
-
+    $page = get_option('mobo_sync_page');
+    
     $isSyncActive = false;
-    if (wp_next_scheduled('mobo_core_sync_products_event')) {
+
+    if(!empty($page)){
         $isSyncActive = true;
     }
+    else{
+        $isSyncActive = false;
+        $page = 1;
+    }
+
+    $productLeft = get_option('mobo_sync_product_left', null);
+    trace_log('mobo_sync_product_left:'.$productLeft);
+
+    // $isSyncActive = false;
+    // if (wp_next_scheduled('mobo_core_sync_products_event')) {
+    //     $isSyncActive = true;
+    // }
 
 
     if (!mobo_isLicenseExpired()) {
@@ -226,16 +248,17 @@ function mobo_core_sync_page()
 
                 if (get_option('mobo_core_page_size') != trim($_POST['mobo_core_page_size'])) {
                     //stop sync
+                    trace_log('mobo_core_page_size:'. get_option('mobo_core_page_size') . ':' . trim($_POST['mobo_core_page_size']));
                     mobo_core_sync_stop();
+                }
+                else{
+                    $page = intval($_POST['page']);
+                    update_option('mobo_sync_page', $page);
                 }
 
                 update_option('mobo_core_page_size', intval(trim($_POST['mobo_core_page_size'])));
-
-                $page = intval($_POST['page']);
-                update_option('mobo_sync_page', $page);
-
                 $mobo_core_page_size = $_POST['mobo_core_page_size'];
-                mobo_core_sync_stop();
+
             } else if (isset($_POST['mobo_core_sync_stop'])) {
                 check_admin_referer('mobo_core_sync_stop_nounce');
                 mobo_core_sync_stop();
@@ -255,17 +278,18 @@ function mobo_core_sync_page()
             $totalCount = intval($totalCount);
 
             $productLeft = $totalCount;
+            trace_log('mobo_sync_product_left:'.$productLeft);
             update_option('mobo_sync_product_left', $productLeft);
         } else {
             $productLeft = intval($productLeft);
         }
         $productLeft = intval($productLeft);
 
-        if (wp_next_scheduled('mobo_core_sync_products_event')) {
-            $isSyncActive = true;
-        } else {
-            $isSyncActive = false;
-        }
+        // if (wp_next_scheduled('mobo_core_sync_products_event')) {
+        //     $isSyncActive = true;
+        // } else {
+        //     $isSyncActive = false;
+        // }
 
 
 ?>
