@@ -2,7 +2,7 @@
 /*
 Plugin Name: mobo-core
 Description: بروزرسانی خودکار محصولات از https://mobomobo.ir/
-Version: 4.8
+Version: 4.9
 Author: Pedram Karimi
 Author URI: http://github.com/PedramDev/
 // Requires PHP: <=8.1.0
@@ -30,14 +30,19 @@ $mobo_active_debug = intval(get_option('mobo_active_debug', false));
 function trace_log($obj = null)
 {
     global $mobo_active_debug;
-    if($mobo_active_debug == true){
+    if ($mobo_active_debug) {
         $backtrace = debug_backtrace();
         $caller = $backtrace[0];
-        if(isset($obj) && !empty($obj)){
-            error_log($obj);
-        }
-        else{
-            error_log('Error in file: ' . basename($caller['file']) . ' on line: ' . $caller['line']);
+        
+        if (isset($obj) && !empty($obj)) {
+            // Ensure the object is logged as a string
+            if (is_string($obj) || is_numeric($obj)) {
+                error_log($obj);
+            } else {
+                error_log(print_r($obj, true)); // Log arrays/objects more clearly
+            }
+        } else {
+            error_log('Trace log called from: ' . basename($caller['file']) . ' on line: ' . $caller['line']);
         }
     }
 }
