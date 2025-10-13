@@ -242,12 +242,12 @@ class WooCommerceProductManager
     //174789827 multi attr
     public function update_product($data)
     {
-        return $this->process_product_data($data);
+        return $this->lockProduct($data['productId'],$this->process_product_data($data));
     }
 
     public function webhook_update_product($data)
     {
-        return $this->process_product_data($data);
+        return $this->lockProduct($data['productId'],$this->process_product_data($data));
     }
 
     //fix
@@ -705,6 +705,33 @@ class WooCommerceProductManager
                     break;
             }
         }
+    }
+
+    //handle same product change!
+    function lockProduct($product_id, callable $callback) {
+
+        //use current dir to handle server missconfig (some server have no access to temp!)
+        $lockFile = __DIR__ . "/tmp/product_lock_{$product_id}.lock"; // Lock file path
+
+        // Open the lock file
+        $fileHandle = fopen($lockFile, 'c');
+
+        if ($fileHandle === false) {
+            throw new \Exception("Could not open lock file for product ID: {$product_id}");
+        }
+
+        // Acquire a lock
+        if (flock($fileHandle, LOCK_EX)) { // Exclusive lock
+            // Call the passed function
+            call_user_func($callback);
+
+            // Release the lock
+            flock($fileHandle, LOCK_UN);
+        } else {
+            throw new \Exception("Could not lock product ID: {$product_id}");
+        }
+
+        fclose($fileHandle);
     }
 
     function get_global_product_options()
