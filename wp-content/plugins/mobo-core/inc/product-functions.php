@@ -8,6 +8,14 @@ class WooCommerceProductManager
     {
         // Hook to a point where WordPress is fully loaded
         add_action('init', [$this, 'init']);
+
+        // Create a lock file
+        $lockDirectory = dirname(__DIR__ . "/tmp"); // Get the directory of the lock file
+
+        // Check if the directory exists, if not, create it
+        if (!is_dir($lockDirectory)) {
+            mkdir($lockDirectory, 0755, true); // Create the directory with proper permissions
+        }
     }
 
     private function getCategoryUrls($categories)
@@ -242,12 +250,12 @@ class WooCommerceProductManager
     //174789827 multi attr
     public function update_product($data)
     {
-        return $this->lockProduct($data['productId'],$this->process_product_data($data));
+        return $this->process_product_data($data);
     }
 
     public function webhook_update_product($data)
     {
-        return $this->lockProduct($data['productId'],$this->process_product_data($data));
+        return $this->process_product_data($data);
     }
 
     //fix
@@ -267,51 +275,101 @@ class WooCommerceProductManager
             trace_log();
 
             $product_id = $product_data['productId'];
-            $stock = $product_data['stock'];
-            $price = $product_data['price'];
-            $title = $product_data['title'];
-            $caption = $product_data['caption'];
-            $product_url = $product_data['url'];
-            $comparePrice = $product_data['comparePrice'];
-            $categories = $product_data['productCategories'];
-            $attributes = $product_data['attributes'];
-            $variants = $product_data['variants'];
-            $images = $product_data['images'];
-            $publishDate = $product_data['publishedAt'];
-            trace_log();
 
-            $wp_category_ids = $this->prepare_categories($categories);
-            trace_log();
-
-            $result = $this->get_or_create_product($product_id, $attributes);
-            trace_log();
-
-            $setProdDetailResult = $this->set_product_details($result['product'], $result['isNew'], $product_url, $title, $caption, $price, $comparePrice, $stock, $auto_options, $wp_category_ids, $publishDate);
-            if ($setProdDetailResult == false) {
-                trace_log('save product aborted!');
-                continue;
+            $lockFile = __DIR__ . "/tmp/product_lock_{$product_id}.lock"; // Lock file path
+            if (file_exists($lockFile)) {
+                trace_log();
+                return; // Exit if the function is already running
             }
-            trace_log();
 
-            $wp_product_id = $result['product']->save();
-            $result['product']->update_meta_data('product_guid', $product_id); // Store GUID
-
-            trace_log();
-
-            if ($result['isNew'] || $auto_options['global_update_images'] == '1') {
-                $this->handle_images($result['product'], $images);
+            // Create a lock file
+            $lockCreated = file_put_contents($lockFile, "locked");
+            if ($lockCreated == false) {
+                trace_log();
             }
-            trace_log();
-            $this->update_attributes($result['product'], $attributes, $wp_product_id);
 
-            $result['product']->save();
 
-            $this->update_variants($result['product'], $variants, $auto_options, $wp_product_id);
-            trace_log();
+            try {
+                trace_log();
 
-            $result['product']->save();
-            trace_log();
+                $stock = $product_data['stock'];
+                $price = $product_data['price'];
+                $title = $product_data['title'];
+                $caption = $product_data['caption'];
+                $product_url = $product_data['url'];
+                $comparePrice = $product_data['comparePrice'];
+                $categories = $product_data['productCategories'];
+                $attributes = $product_data['attributes'];
+                $variants = $product_data['variants'];
+                $images = $product_data['images'];
+                $publishDate = $product_data['publishedAt'];
+                trace_log();
+
+                $wp_category_ids = $this->prepare_categories($categories);
+                trace_log();
+
+                $result = $this->get_or_create_product($product_id, $attributes);
+                trace_log();
+
+                $setProdDetailResult = $this->set_product_details($result['product'], $result['isNew'], $product_url, $title, $caption, $price, $comparePrice, $stock, $auto_options, $wp_category_ids, $publishDate);
+                if ($setProdDetailResult == false) {
+                    trace_log('save product aborted!');
+                    continue;
+                }
+                trace_log();
+
+                $wp_product_id = $result['product']->save();
+                $result['product']->update_meta_data('product_guid', $product_id); // Store GUID
+
+                trace_log();
+
+                if ($result['isNew'] || $auto_options['global_update_images'] == '1') {
+                    $this->handle_images($result['product'], $images);
+                }
+                trace_log();
+                $this->update_attributes($result['product'], $attributes, $wp_product_id);
+
+                $result['product']->save();
+
+                $this->update_variants($result['product'], $variants, $auto_options, $wp_product_id);
+                trace_log();
+
+                $result['product']->save();
+                trace_log();
+            } finally {
+                // Remove the lock file
+                trace_log();
+                if (file_exists($lockFile))
+                    unlink($lockFile);
+                trace_log();
+            }
         }
+
+        #region fix options fat
+        global $wpdb;
+        $table_prefix = $wpdb->prefix;  // Get the table prefix
+
+        // Prepare the query with a placeholder
+        $wpdb->query(
+            $wpdb->prepare(
+                "DELETE FROM {$table_prefix}options WHERE option_name LIKE %s",
+                '_transient_%'
+            )
+        );
+
+        $wpdb->query(
+            $wpdb->prepare(
+                "DELETE FROM {$table_prefix}options WHERE option_name LIKE %s",
+                '_transient_timeout_%'
+            )
+        );
+
+        // Optimize the table
+        $wpdb->query(
+            "OPTIMIZE TABLE {$table_prefix}options"
+        );
+        #endregion
+
 
         return 'Products updated successfully';
     }
@@ -591,11 +649,11 @@ class WooCommerceProductManager
     private function set_variant_details($existing_variant_id, $variation, $variant, $auto_options)
     {
         trace_log();
-        
+
         $is_new = $existing_variant_id == 0;
         $auto_price = $auto_options['global_product_auto_price'] == '1';
 
-        if($is_new || $auto_price){
+        if ($is_new || $auto_price) {
             $this->set_variant_prices($existing_variant_id, $variation, $variant, $auto_options);
         }
 
@@ -705,33 +763,6 @@ class WooCommerceProductManager
                     break;
             }
         }
-    }
-
-    //handle same product change!
-    function lockProduct($product_id, callable $callback) {
-
-        //use current dir to handle server missconfig (some server have no access to temp!)
-        $lockFile = __DIR__ . "/tmp/product_lock_{$product_id}.lock"; // Lock file path
-
-        // Open the lock file
-        $fileHandle = fopen($lockFile, 'c');
-
-        if ($fileHandle === false) {
-            throw new \Exception("Could not open lock file for product ID: {$product_id}");
-        }
-
-        // Acquire a lock
-        if (flock($fileHandle, LOCK_EX)) { // Exclusive lock
-            // Call the passed function
-            call_user_func($callback);
-
-            // Release the lock
-            flock($fileHandle, LOCK_UN);
-        } else {
-            throw new \Exception("Could not lock product ID: {$product_id}");
-        }
-
-        fclose($fileHandle);
     }
 
     function get_global_product_options()

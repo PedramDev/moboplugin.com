@@ -50,6 +50,14 @@ function mobo_core_sync_categories()
 
 function mobo_core_sync_products()
 {
+    // Create a lock file
+    $lockDirectory = dirname(__DIR__ . "/tmp"); // Get the directory of the lock file
+
+    // Check if the directory exists, if not, create it
+    if (!is_dir($lockDirectory)) {
+        mkdir($lockDirectory, 0755, true); // Create the directory with proper permissions
+    }
+
     $lockFile = __DIR__ . '/temp/mobo_prod_sync_lock'; // Temporary lock file path
     trace_log();
 
@@ -126,6 +134,11 @@ function mobo_core_sync_products()
             update_option('mobo_sync_page', $page);
             update_option('mobo_sync_product_left', $productLeft);
             trace_log('mobo_sync_product_left:'.$productLeft);
+            trace_log();
+        }
+        else{
+            $page=1;
+            $productLeft = 0;
             trace_log();
         }
 

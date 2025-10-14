@@ -69,6 +69,7 @@ function mobo_core_admin_menu()
 {
     add_menu_page('تنظیمات موبو', 'تنظیمات موبو', 'manage_options', 'mobo_core_admin', 'mobo_core_admin_page');
     add_submenu_page('mobo_core_admin', 'همگام سازی', 'همگام سازی', 'manage_options', 'mobo_core_sync', 'mobo_core_sync_page');
+    add_submenu_page('mobo_core_admin', 'تعمیرات', 'تعمیرات', 'manage_options', 'mobo_core_fixer', 'mobo_core_fixer_page');
 }
 
 
