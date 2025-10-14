@@ -1,5 +1,5 @@
 @echo off
-set VERSION=5.1
+set VERSION=5.2
 git tag %VERSION%
 git push origin %VERSION%
 gh release create v%VERSION% --title "Mobo Core %VERSION%" --notes "%VERSION%"

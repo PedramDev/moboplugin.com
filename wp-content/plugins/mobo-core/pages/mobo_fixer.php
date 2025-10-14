@@ -7,6 +7,7 @@ if (!defined('ABSPATH')) {
 
 add_action('admin_post_mobo_optimize_database', 'mobo_optimize_database');
 add_action('admin_post_mobo_delete_all_prod', 'mobo_delete_all_prod');
+add_action('admin_post_mobo_core_remCrons', 'mobo_core_remCrons');
 
 function mobo_optimize_database()
 {
@@ -35,6 +36,14 @@ function mobo_optimize_database()
     // Optimize the table
     $wpdb->query(
         "OPTIMIZE TABLE {$table_prefix}options"
+    );
+
+    $wpdb->query(
+        "OPTIMIZE TABLE {$table_prefix}posts"
+    );
+
+    $wpdb->query(
+        "OPTIMIZE TABLE {$table_prefix}postmeta"
     );
 
     wp_redirect(wp_get_referer());
@@ -129,10 +138,6 @@ function mobo_delete_all_prod()
 
     // Prepare the query with a placeholder
 
-    
-    global $wpdb;
-    $table_prefix = $wpdb->prefix;  // Get the table prefix
-
     $wpdb->query(
         $wpdb->prepare(
             "DELETE FROM {$table_prefix}options WHERE option_name LIKE %s",
@@ -190,6 +195,27 @@ function mobo_delete_all_prod()
     exit;
 }
 
+function mobo_core_remCrons(){
+    trace_log();
+    trace_log('mobo_core_remCrons');
+    if (current_user_can('manage_options')) { // Ensure only admin can run this
+
+        global $wpdb;
+        $table_prefix = $wpdb->prefix;  // Get the table prefix
+        // Optimize the table
+        
+        $wpdb->query(
+            "DELETE FROM {$table_prefix}options WHERE option_name = 'cron';"
+        );
+        
+        trace_log();
+        // Redirect with a success message
+        wp_redirect(admin_url('admin.php?page=your_page_slug&message=crons_removed'));
+        exit;
+    }
+    trace_log();
+}
+
 
 function mobo_core_fixer_page()
 {
@@ -213,6 +239,7 @@ function mobo_core_fixer_page()
     $dup_product_results = $wpdb->get_results($dup_product);
 
     //dup
+}
 ?>
 
     <style>
@@ -245,48 +272,16 @@ function mobo_core_fixer_page()
         }
     </style>
 
-<?php /*
-    <section>
-        محصولات مشابه بخاطر در لیست زیر نمایش داده میشوند - بررسی و پاک کنید تا ۱۲ ساعت بعد دوباره وارد سیستم خواهند شد بصورت سالم
-        <br>
-        <bdi dir="rtl">
-            اگر حذف در دسترس نبود یا نمایش در فروشگاه - از ForceDelete استفاده کنید
-        </bdi>
-        <br>
-        <table class="table-container">
-            <tr>
-                <th>Post ID</th>
-                <th>View</th>
-                <th>Edit</th>
-                <th>Delete</th>
-                <th>Force Delete</th>
-            </tr>
-            <?php foreach ($dup_product_results as $row): ?>
-                <tr>
-                    <td><?php echo $row->post_id; ?></td>
-                    <td><a href="<?php echo get_permalink($row->post_id); ?>">View</a></td>
-                    <td><a href="<?php echo admin_url('post.php?post=' . $row->post_id . '&action=edit'); ?>">Edit</a></td>
-                    <td><a href="<?php echo admin_url('post.php?post=' . $row->post_id . '&action=delete'); ?>">Delete</a></td>
-                    <td><a href="<?php echo admin_url('admin-post.php?action=force_delete_product&post_id=' . $row->post_id); ?>">Force Delete</a></td>
-                </tr>
-            <?php endforeach; ?>
-        </table>
-
-    </section>
-
-    <section>
-        <a href="<?php echo admin_url('admin-post.php?action=mobo_delete_wrong_attr'); ?>">Fix Attr</a>
-    </section>
-
-    <hr>
-*/ ?>
-
-<a href="<?php echo admin_url('admin-post.php?action=mobo_optimize_database'); ?>">Optimize Database</a>
-<br>
-<a href="<?php echo admin_url('admin-post.php?action=mobo_delete_all_prod'); ?>">Delete All mobo products</a>
+    <a href="<?php echo admin_url('admin-post.php?action=mobo_optimize_database'); ?>">Optimize Database</a>
+    <br>
+    <br>
+    <a href="<?php echo admin_url('admin-post.php?action=mobo_delete_all_prod'); ?>">Delete All mobo products</a>
+    <br>
+    <br>
+    <a href="<?php echo admin_url('admin-post.php?action=mobo_core_remCrons'); ?>">Remove Cronjobs</a>
+    <br>
+    <br>
 
 <?php
 
 ?>
-
-<?php } ?>

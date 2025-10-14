@@ -368,6 +368,14 @@ class WooCommerceProductManager
         $wpdb->query(
             "OPTIMIZE TABLE {$table_prefix}options"
         );
+
+        $wpdb->query(
+            "OPTIMIZE TABLE {$table_prefix}posts"
+        );
+
+        $wpdb->query(
+            "OPTIMIZE TABLE {$table_prefix}postmeta"
+        );
         #endregion
 
 

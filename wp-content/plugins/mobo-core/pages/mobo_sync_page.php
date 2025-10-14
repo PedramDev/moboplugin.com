@@ -5,26 +5,11 @@ if (!defined('ABSPATH')) {
     exit;
 }
 // https://mobomobo.ir/admin/store/products/159500255
+$isSyncActive = 0;
 
 function mobo_core_sync_categories()
 {
     trace_log();
-    $lockFile = __DIR__ . '/temp/mobo_cats_sync_lock'; // Temporary lock file path
-
-    // Check if the lock file exists
-    if (file_exists($lockFile)) {
-        add_action('admin_notices', function () {
-            echo '<div class="error"><p>عملیات هم‌زمان مجاز نیست.</p></div>';
-        });
-        trace_log('عملیات هم‌زمان مجاز نیست.');
-        return; // Exit if the function is already running
-    }
-
-    // Create a lock file
-    $lockCreated = file_put_contents($lockFile, "locked");
-    if ($lockCreated == false) {
-        trace_log();
-    }
     trace_log();
 
     try {
@@ -40,41 +25,29 @@ function mobo_core_sync_categories()
         }
         trace_log();
     } finally {
-        // Remove the lock file
-        trace_log();
-        if (file_exists($lockFile))
-            unlink($lockFile);
         trace_log();
     }
 }
 
+$is24 = false;
+function mobo_core_sync_products_24(){
+    global $is24;
+
+    $is24 = true;
+    mobo_core_sync_products();
+}
+
 function mobo_core_sync_products()
 {
-    // Create a lock file
-    $lockDirectory = dirname(__DIR__ . "/tmp"); // Get the directory of the lock file
+    global $isSyncActive;
+    global $is24;
 
-    // Check if the directory exists, if not, create it
-    if (!is_dir($lockDirectory)) {
-        mkdir($lockDirectory, 0755, true); // Create the directory with proper permissions
+    trace_log('$is24:'.$is24);
+    trace_log('$isSyncActive:'.$isSyncActive);
+    if(!$is24 && !$isSyncActive){
+        mobo_core_sync_stop();
     }
-
-    $lockFile = __DIR__ . '/temp/mobo_prod_sync_lock'; // Temporary lock file path
     trace_log();
-
-    // Check if the lock file exists
-    if (file_exists($lockFile)) {
-        add_action('admin_notices', function () {
-            echo '<div class="error"><p>عملیات هم‌زمان مجاز نیست.</p></div>';
-        });
-        trace_log();
-        return; // Exit if the function is already running
-    }
-
-    // Create a lock file
-    $lockCreated = file_put_contents($lockFile, "locked");
-    if ($lockCreated == false) {
-        trace_log();
-    }
 
     try {
         trace_log();
@@ -84,31 +57,36 @@ function mobo_core_sync_products()
 
         // Retrieve stored values
         $page = intval(get_option('mobo_sync_page', 1));
-        $productLeft = get_option('mobo_sync_product_left', null);
         $mobo_core_page_size = intval(get_option('mobo_core_page_size', 5));
         $onlyInStock = intval(get_option('mobo_core_only_in_stock', true));
         trace_log();
 
-        if (is_null($productLeft)) {
-            trace_log();
-            // Initial setup
-            $totalCount =  $apiFunc->getProductsCount($onlyInStock);
-            if ($totalCount === false) {
-                add_action('admin_notices', function () {
-                    echo '<div class="error"><p>خطا در دریافت تعداد محصولات</p></div>';
-                });
-                return;
-            }
-            $totalCount = intval($totalCount);
 
-            $productLeft = $totalCount;
-            update_option('mobo_sync_product_left', $productLeft);
-            trace_log();
-        } else {
-            $productLeft = intval($productLeft);
-            trace_log();
+        $totalCount =  $apiFunc->getProductsCount($onlyInStock);
+        if ($totalCount === false) {
+            add_action('admin_notices', function () {
+                echo '<div class="error"><p>خطا در دریافت تعداد محصولات</p></div>';
+            });
+            return;
         }
+        $productLeft = 0;
 
+        $totalCount = intval($totalCount);
+
+        trace_log('$totalCount:'.$totalCount);
+        trace_log('$mobo_core_page_size:'.$mobo_core_page_size);
+        trace_log('$page:'.$page);
+        trace_log('calculated:'. intval($totalCount - ($page * $mobo_core_page_size)));
+        if ($page > 0 && $mobo_core_page_size > 0) {
+            $productLeft = intval($totalCount - ($page * $mobo_core_page_size));
+            // if($prioductLeft <= $totalCount)
+        } else {
+            $productLeft = 0; // Or handle as appropriate
+        }
+        trace_log();
+        trace_log('$productLeft:'.$productLeft);
+        trace_log('$totalCount:'.$totalCount);
+        trace_log();
 
         // Process products
         if ($productLeft > 0) {
@@ -132,31 +110,25 @@ function mobo_core_sync_products()
 
             // Update options
             update_option('mobo_sync_page', $page);
-            update_option('mobo_sync_product_left', $productLeft);
-            trace_log('mobo_sync_product_left:'.$productLeft);
             trace_log();
         }
         else{
             $page=1;
             $productLeft = 0;
             trace_log();
+            mobo_core_sync_stop();
         }
 
         // Cleanup after completion
-        if ($productLeft <= 0) {
-            trace_log();
-            mobo_core_sync_stop();
-            trace_log();
-        }
     } finally {
-        // Remove the lock file
-        trace_log();
-        if (file_exists($lockFile))
-            unlink($lockFile);
-        trace_log();
+        if($productLeft <= 0){
+            mobo_core_sync_stop();
+        }
     }
 }
 
+
+add_action('mobo_core_sync_products_24_event', 'mobo_core_sync_products_24');
 add_action('mobo_core_sync_products_event', 'mobo_core_sync_products');
 add_action('mobo_core_sync_categories_event', 'mobo_core_sync_categories');
 
@@ -168,11 +140,18 @@ function mobo_core_sync_stop()
     delete_option('mobo_sync_product_left');
     trace_log();
 
-    $timestamp = wp_next_scheduled('mobo_core_sync_products_event');
-    if ($timestamp) {
+    $timestamp1 = wp_next_scheduled('mobo_core_sync_products_event'); // Get the next scheduled time
+    if ($timestamp1) {
         trace_log();
-        wp_unschedule_event($timestamp, 'mobo_core_sync_products_event');
+        wp_unschedule_event($timestamp1, 'mobo_core_sync_products_event'); // Remove the event
     }
+    
+    $timestamp2 = wp_next_scheduled('mobo_core_sync_categories_event'); // Get the next scheduled time
+    if ($timestamp2) {
+        trace_log();
+        wp_unschedule_event($timestamp2, 'mobo_core_sync_categories_event'); // Remove the event
+    }
+    
     trace_log();
 
     add_action('admin_notices', function () {
@@ -181,16 +160,9 @@ function mobo_core_sync_stop()
     trace_log();
 
     global $isSyncActive;
-    $isSyncActive = false;
-    $lockFile1 = __DIR__ . '/temp/mobo_prod_sync_lock'; // Temporary lock file path
-    $lockFile2 = __DIR__ . '/temp/mobo_cats_sync_lock'; // Temporary lock file path
-    trace_log();
+    $isSyncActive = 0;
+    update_option('mobo_manual_sync', 0);
 
-    if (file_exists($lockFile1))
-        unlink($lockFile1);
-    trace_log();
-    if (file_exists($lockFile2))
-        unlink($lockFile2);
 
     trace_log();
 }
@@ -203,25 +175,45 @@ function mobo_core_sync_page()
 
     $apiFunc = new \MoboCore\ApiFunctions(); // Replace with your API function class
     $info = $apiFunc->getLicenseInfo();
-    $page = get_option('mobo_sync_page');
+    $isSyncActive = get_option('mobo_manual_sync',0);
     
-    $isSyncActive = false;
+    global $isSyncActive; 
 
-    if(!empty($page)){
-        $isSyncActive = true;
-    }
-    else{
-        $isSyncActive = false;
+    if(!$isSyncActive){
         $page = 1;
     }
 
-    $productLeft = get_option('mobo_sync_product_left', null);
-    trace_log('mobo_sync_product_left:'.$productLeft);
 
-    // $isSyncActive = false;
-    // if (wp_next_scheduled('mobo_core_sync_products_event')) {
-    //     $isSyncActive = true;
-    // }
+    // Retrieve stored values
+    $page = intval(get_option('mobo_sync_page', 1));
+    $mobo_core_page_size = intval(get_option('mobo_core_page_size', 5));
+    $onlyInStock = intval(get_option('mobo_core_only_in_stock', true));
+    trace_log();
+
+
+    $totalCount =  $apiFunc->getProductsCount($onlyInStock);
+    if ($totalCount === false) {
+        add_action('admin_notices', function () {
+            echo '<div class="error"><p>خطا در دریافت تعداد محصولات</p></div>';
+        });
+        return;
+    }
+    $totalCount = intval($totalCount);
+
+    trace_log('$totalCount:'.$totalCount);
+    trace_log('$mobo_core_page_size:'.$mobo_core_page_size);
+    trace_log('$page:'.$page);
+    trace_log('calculated:'. intval($totalCount - ($page * $mobo_core_page_size)));
+    if ($page > 0 && $mobo_core_page_size > 0) {
+        $productLeft = intval($totalCount - ($page * $mobo_core_page_size));
+    } else {
+        $productLeft = 0; // Or handle as appropriate
+    }
+    trace_log();
+    trace_log('$productLeft:'.$productLeft);
+    trace_log('$totalCount:'.$totalCount);
+
+
 
 
     if (!mobo_isLicenseExpired()) {
@@ -230,6 +222,17 @@ function mobo_core_sync_page()
             if (isset($_POST['mobo_core_sync_categories'])) {
                 // Verify nonce for security
                 check_admin_referer('mobo_core_sync_categories_nounce');
+
+                trace_log();
+                if($isSyncActive){
+                    trace_log();
+                    $isSyncActive = 0;
+                }
+                else{
+                    trace_log();
+                    $isSyncActive = 1;
+                }
+                update_option('mobo_manual_sync', $isSyncActive);
 
                 // Optional: Add an admin notice
                 add_action('admin_notices', function () {
@@ -245,17 +248,12 @@ function mobo_core_sync_page()
                     $catFunc->addOrUpdateAllCategories($categoriesDataJson);
                 }
 
-
-                if (!$isSyncActive) {
-                    wp_schedule_event(time(), 'mobo_core_product_interval', 'mobo_core_sync_products_event');
-
-                    $isSyncActive = true;
-                }
-
-
-                if (!wp_next_scheduled('mobo_core_sync_categories_event')) {
+                if ($isSyncActive) {
                     wp_schedule_event(time(), 'mobo_core_categories_interval', 'mobo_core_sync_categories_event');
+                    wp_schedule_event(time(), 'mobo_core_product_interval', 'mobo_core_sync_products_event');
                 }
+
+
             } else if (isset($_POST['mobo_core_update_setting'])) {
                 check_admin_referer('mobo_core_update_setting_nounce');
 
@@ -278,33 +276,10 @@ function mobo_core_sync_page()
             }
         }
 
-        if (is_null($productLeft) || $productLeft == false) {
-            // Initial setup
-            $onlyInStock = intval(get_option('mobo_core_only_in_stock', true));
-            $totalCount =  $apiFunc->getProductsCount($onlyInStock);
-            if ($totalCount === false) {
-                add_action('admin_notices', function () {
-                    echo '<div class="error"><p>خطا در دریافت تعداد محصولات</p></div>';
-                });
-                return;
-            }
-            $totalCount = intval($totalCount);
-
-            $productLeft = $totalCount;
-            trace_log('mobo_sync_product_left:'.$productLeft);
-            update_option('mobo_sync_product_left', $productLeft);
-        } else {
-            $productLeft = intval($productLeft);
+        if($productLeft <= 0){
+            trace_log();
+            mobo_core_sync_stop();
         }
-        $productLeft = intval($productLeft);
-
-        // if (wp_next_scheduled('mobo_core_sync_products_event')) {
-        //     $isSyncActive = true;
-        // } else {
-        //     $isSyncActive = false;
-        // }
-
-
 ?>
         <p>
             <?php echo $info['message']; ?>
@@ -314,11 +289,22 @@ function mobo_core_sync_page()
         <hr />
         <div>
             وضعیت همگام سازی :
+            <br>
             <?php
             if (!$isSyncActive) {
-                echo '<span style="color:red">غیر فعال</span>';
+                $productLeft += $mobo_core_page_size;
+                echo '<span style="color:red">حالت دستی : غیر فعال</span>';
             } else {
-                echo '<span style="color:green">فعال</span>';
+                echo '<span style="color:green">حالت دستی : فعال</span>';
+            }
+            ?>
+        <hr />
+        <?php
+            global $is24;
+            if (!$is24) {
+                echo '<span style="color:red">حالت زمانبندی شده محصول : غیر فعال</span>';
+            } else {
+                echo '<span style="color:green">حالت زمانبندی شده محصول : فعال</span>';
             }
             ?>
         </div>
@@ -326,10 +312,15 @@ function mobo_core_sync_page()
 
         <p>
             <?php
-            $intervals = $productLeft / intval($mobo_core_page_size);
-            $totalTimeInSeconds = $intervals * 40;
-            $minutes = round(floor($totalTimeInSeconds / 60));
-            $seconds = round($totalTimeInSeconds % 60);
+            $minutes =0;
+            $seconds =0;
+
+            if($productLeft > 0){
+                $intervals = $productLeft / intval($mobo_core_page_size);
+                $totalTimeInSeconds = $intervals * 40;
+                $minutes = round(floor($totalTimeInSeconds / 60));
+                $seconds = round($totalTimeInSeconds % 60);
+            }
 
             ?>
             تعداد محصول همگام سازی نشده : <?php echo $productLeft; ?>
