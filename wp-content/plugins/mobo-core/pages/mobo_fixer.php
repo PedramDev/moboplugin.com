@@ -11,8 +11,8 @@ add_action('admin_post_mobo_core_remCrons', 'mobo_core_remCrons');
 
 function mobo_optimize_database()
 {
-    if (!current_user_can('delete_posts')) {
-        wp_die('You are not allowed to delete posts.');
+    if (!current_user_can('administrator')) {
+        wp_die('You are not allowed to perform this action.');
     }
 
 
@@ -53,8 +53,8 @@ function mobo_optimize_database()
 function mobo_force_delete_product()
 {
     // Check if the user has the necessary permissions
-    if (!current_user_can('delete_posts')) {
-        wp_die('You are not allowed to delete posts.');
+    if (!current_user_can('administrator')) {
+        wp_die('You are not allowed to perform this action.');
     }
 
     // Get the post ID from the URL
@@ -89,8 +89,8 @@ function mobo_force_delete_product()
 function mobo_delete_wrong_attr()
 {
     // Check if the user has the necessary permissions
-    if (!current_user_can('delete_posts')) {
-        wp_die('You are not allowed to delete posts.');
+    if (!current_user_can('administrator')) {
+        wp_die('You are not allowed to perform this action.');
     }
     // Call your function to force delete the product
     //Begin Data Here
@@ -128,8 +128,8 @@ function mobo_delete_wrong_attr()
 
 function mobo_delete_all_prod()
 {
-    if (!current_user_can('delete_posts')) {
-        wp_die('You are not allowed to delete posts.');
+    if (!current_user_can('administrator')) {
+        wp_die('You are not allowed to perform this action.');
     }
 
 
@@ -198,51 +198,36 @@ function mobo_delete_all_prod()
 function mobo_core_remCrons(){
     trace_log();
     trace_log('mobo_core_remCrons');
-    if (current_user_can('manage_options')) { // Ensure only admin can run this
 
-        global $wpdb;
-        $table_prefix = $wpdb->prefix;  // Get the table prefix
-        // Optimize the table
-        
-        $wpdb->query(
-            "DELETE FROM {$table_prefix}options WHERE option_name = 'cron';"
-        );
-        
-        trace_log();
-        // Redirect with a success message
-        wp_redirect(admin_url('admin.php?page=your_page_slug&message=crons_removed'));
-        exit;
+    if (!current_user_can('administrator')) {
+        wp_die('You are not allowed to perform this action.');
     }
+
+    global $wpdb;
+    $table_prefix = $wpdb->prefix;  // Get the table prefix
+    // Optimize the table
+    
+    $wpdb->query(
+        "DELETE FROM {$table_prefix}options WHERE option_name = 'cron';"
+    );
+    
+    trace_log();
+    // Redirect with a success message
+    wp_redirect(wp_get_referer());
+    exit;
     trace_log();
 }
 
 
 function mobo_core_fixer_page()
 {
-    global $wpdb;
-    $table_prefix = $wpdb->prefix;  // Get the table prefix
-
-
-    $dup_product = $wpdb->prepare(
-        "SELECT post_id 
-        FROM `{$table_prefix}postmeta` m 
-        WHERE m.meta_key = 'product_guid' 
-        AND m.meta_value IN (
-            SELECT meta_value 
-            FROM `{$table_prefix}postmeta` 
-            WHERE meta_key = 'product_guid' 
-            GROUP BY meta_value 
-            HAVING COUNT(*) > 1
-        );"
-    );
-
-    $dup_product_results = $wpdb->get_results($dup_product);
-
-    //dup
-}
 ?>
 
     <style>
+        .container{
+            margin: 0 auto;
+            padding: 20px 200px;
+        }
         .table-container {
             margin: 20px 0;
         }
@@ -271,17 +256,19 @@ function mobo_core_fixer_page()
             background-color: #eaeaea;
         }
     </style>
-
-    <a href="<?php echo admin_url('admin-post.php?action=mobo_optimize_database'); ?>">Optimize Database</a>
-    <br>
-    <br>
-    <a href="<?php echo admin_url('admin-post.php?action=mobo_delete_all_prod'); ?>">Delete All mobo products</a>
-    <br>
-    <br>
-    <a href="<?php echo admin_url('admin-post.php?action=mobo_core_remCrons'); ?>">Remove Cronjobs</a>
-    <br>
-    <br>
+<div class="container">
+    
+        <a href="<?php echo admin_url('admin-post.php?action=mobo_optimize_database'); ?>">Optimize Database</a>
+        <br>
+        <br>
+        <a href="<?php echo admin_url('admin-post.php?action=mobo_delete_all_prod'); ?>">Delete All mobo products</a>
+        <br>
+        <br>
+        <a href="<?php echo admin_url('admin-post.php?action=mobo_core_remCrons'); ?>">Remove Cronjobs</a>
+        <br>
+        <br>
+</div>
 
 <?php
-
+}
 ?>

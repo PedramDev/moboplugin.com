@@ -39,14 +39,6 @@ function mobo_core_sync_products_24(){
 
 function mobo_core_sync_products()
 {
-    global $isSyncActive;
-    global $is24;
-
-    trace_log('$is24:'.$is24);
-    trace_log('$isSyncActive:'.$isSyncActive);
-    if(!$is24 && !$isSyncActive){
-        mobo_core_sync_stop();
-    }
     trace_log();
 
     try {
@@ -135,6 +127,8 @@ add_action('mobo_core_sync_categories_event', 'mobo_core_sync_categories');
 
 function mobo_core_sync_stop()
 {
+    global $isSyncActive;
+    
     trace_log();
     delete_option('mobo_sync_page');
     delete_option('mobo_sync_product_left');
@@ -159,7 +153,6 @@ function mobo_core_sync_stop()
     });
     trace_log();
 
-    global $isSyncActive;
     $isSyncActive = 0;
     update_option('mobo_manual_sync', 0);
 
@@ -175,9 +168,10 @@ function mobo_core_sync_page()
 
     $apiFunc = new \MoboCore\ApiFunctions(); // Replace with your API function class
     $info = $apiFunc->getLicenseInfo();
+    global $isSyncActive;
+
     $isSyncActive = get_option('mobo_manual_sync',0);
     
-    global $isSyncActive; 
 
     if(!$isSyncActive){
         $page = 1;
@@ -224,6 +218,7 @@ function mobo_core_sync_page()
                 check_admin_referer('mobo_core_sync_categories_nounce');
 
                 trace_log();
+                trace_log('$isSyncActive:'.$isSyncActive);
                 if($isSyncActive){
                     trace_log();
                     $isSyncActive = 0;
@@ -291,6 +286,8 @@ function mobo_core_sync_page()
             وضعیت همگام سازی :
             <br>
             <?php
+            trace_log();
+            trace_log('$isSyncActive:'.$isSyncActive);
             if (!$isSyncActive) {
                 $productLeft += $mobo_core_page_size;
                 echo '<span style="color:red">حالت دستی : غیر فعال</span>';
