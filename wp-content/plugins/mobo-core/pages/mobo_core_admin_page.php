@@ -11,6 +11,24 @@ function mobo_core_admin_page()
     $site_url = get_option('siteurl');
     $max_dynamic = 5;
     // Check if the form is submitted
+
+    $cronjob_message = '';
+    // check cronjob is open
+    if(defined('DISABLE_WP_CRON')){
+        if(DISABLE_WP_CRON){
+            $cronjob_message = '<p class"success">کرون جاب فعال است</p>';
+        }
+        else{
+            $cronjob_message = '<p class"error">کرون جاب غیرفعال است
+            <br/>
+            همین حالا فعالش کنید!
+            <br/>
+            wp-config.php > define(\'DISABLE_WP_CRON\', true);
+            </p>';
+        }
+    }
+    // end check
+
     $message = '';
     if (isset($_POST['save_mobo_core_settings'])) {
         update_option('mobo_core_token', trim($_POST['token']));
@@ -111,11 +129,26 @@ function mobo_core_admin_page()
 
 ?>
 
+    <style>
+        .success{
+            color: green;
+            font-size: 18px;
+        }
+        .error{
+            color: red;
+            font-size: 40px;
+        }
+    </style>
+
     <div class="wrap" style="
                         display: flex;
                         flex-direction: column;
                         gap: 20px;
                         max-width: 700px;">
+
+                        <div>
+                            <?php echo $cronjob_message; ?>
+                        </div>
 
         <div style="border: 1px solid #3e3e3e;"
             style="
