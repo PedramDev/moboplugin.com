@@ -15,7 +15,7 @@ function mobo_core_admin_page()
     $cronjob_message = '';
     // check cronjob is open
     if(defined('DISABLE_WP_CRON')){
-        if(DISABLE_WP_CRON){
+        if(!DISABLE_WP_CRON){
             $cronjob_message = '<p class"success">کرون جاب فعال است</p>';
         }
         else{
