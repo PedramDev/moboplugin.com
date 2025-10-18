@@ -23,7 +23,7 @@ function mobo_core_admin_page()
             <br/>
             همین حالا فعالش کنید!
             <br/>
-            wp-config.php > define(\'DISABLE_WP_CRON\', true);
+            wp-config.php > define(\'DISABLE_WP_CRON\', false);
             </p>';
         }
     }
