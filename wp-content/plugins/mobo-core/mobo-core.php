@@ -2,7 +2,7 @@
 /*
 Plugin Name: mobo-core
 Description: بروزرسانی خودکار محصولات از https://mobomobo.ir/
-Version: 5.5
+Version: 5.6
 Author: Pedram Karimi
 Author URI: http://github.com/PedramDev/
 // Requires PHP: <=8.1.0
@@ -21,6 +21,7 @@ if ( ! function_exists( 'get_plugin_data' ) ) {
 $plugin_data = get_plugin_data(__FILE__, false, false);
 define('MOBO_CORE_VERSION', $plugin_data['Version']);
 define('MOBO_CORE_PLUGIN_URL', plugin_dir_url(__FILE__));
+define('MOBO_CORE_WEBHOOK_FILE_DIR', plugin_dir_path(__FILE__) . 'webhook-files/');
 
 require  __DIR__ . '/inc/index.php';
 require  __DIR__ . '/pages/index.php';
@@ -85,13 +86,27 @@ function custom_cron_schedule($schedules)
         'interval' => 600,
         'display'  => 'Every 500 sec',
     );
+    $schedules['mobo_core_read_webhook_interval'] = array(
+        'interval' => 60,
+        'display'  => 'Every 60 sec',
+    );
     return $schedules;
 }
+
+add_action('mobo_core_read_webhook_interval', 'mobo_core_read_webhook_interval');
+
+if (!wp_next_scheduled('mobo_core_read_webhook_interval')) {
+    // Schedule the event to run every minute
+    wp_schedule_event(time(), 'mobo_core_read_webhook_interval', 'mobo_core_read_webhook_interval');
+}
+
 
 if (!wp_next_scheduled('mobo_core_sync_products_24_event')) {
     $timestamp = strtotime('2:00:00'); // Set time for 2 AM
     wp_schedule_event($timestamp , 'daily', 'mobo_core_sync_products_24_event');
 }
+
+
 
 function mobo_isLicenseExpired()
 {
