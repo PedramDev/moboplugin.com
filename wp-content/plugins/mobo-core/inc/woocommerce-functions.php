@@ -43,18 +43,37 @@ function enqueue_admin_mobo_script() {
 add_action('wp_ajax_mobo_resync_action', 'handle_mobo_resync_action');
 
 function handle_mobo_resync_action() {
-    trace_log();
-    trace_log($_POST['product_id']);
-    $product_id = intval($_POST['product_id']);
-    
+    trace_log('start mobo_resync_action');
+
+    if ( empty($_POST['product_id']) ) {
+        wp_send_json_error('Missing product_id');
+    }
+
+    $product_id = $_POST['product_id'];
+    trace_log('product_id: ' . $product_id);
+
     $apiFunc = new \MoboCore\ApiFunctions();
-    $onlyInStock = intval(get_option('mobo_core_only_in_stock', true));
-    $data = $apiFunc->getProductByGuidAsJson($product_id,$onlyInStock);
-    trace_log();
-    trace_log($product_id);
-    $productFunc = new \MoboCore\WooCommerceProductManager(); // Replace with your product function class
-    
-    $productFunc->update_product($data);
-    // Respond back
-    wp_send_json_success("ReSync function executed for product ID: " . $product_id);
+
+    $data = $apiFunc->getProductByGuidAsJson($product_id);
+    trace_log('api data received');
+
+    $productFunc = new \MoboCore\WooCommerceProductManager();
+
+    try {
+        trace_log('before update_product');
+
+        $productFunc->update_product($data);
+
+        trace_log('after update_product'); // <— if you never see this, we know where it dies
+
+        wp_send_json_success("ReSync function executed for product ID: " . $product_id);
+    } catch (\Throwable $e) {
+        trace_log('update_product exception: ' . $e->getMessage());
+        trace_log($e->getTraceAsString());
+
+        wp_send_json_error([
+            'message' => 'update_product failed',
+            'error'   => $e->getMessage(),
+        ]);
+    }
 }

@@ -67,96 +67,80 @@ class WooCommerceProductManager
 
     function fetch_image_data($url)
     {
-        // Basic URL validation
+        trace_log("fetch_image_data() called with URL: {$url}");
+
         if (!filter_var($url, FILTER_VALIDATE_URL)) {
+            trace_log("Invalid URL -> {$url}");
             return false;
         }
 
-        // Prefer WordPress HTTP API when available
-        if (function_exists('wp_remote_get')) {
-            $response = wp_remote_get($url, [
+        // Use global WP HTTP API
+        if (function_exists('\wp_remote_get')) {
+            trace_log("Using wp_remote_get()");
+
+            $response = \wp_remote_get($url, [
                 'timeout'     => 20,
                 'redirection' => 5,
             ]);
 
-            if (is_wp_error($response)) {
+            if (\is_wp_error($response)) {
+                trace_log("wp_remote_get() error -> " . $response->get_error_message());
                 return false;
             }
 
-            $code = wp_remote_retrieve_response_code($response);
+            $code = \wp_remote_retrieve_response_code($response);
+            trace_log("HTTP response code -> {$code}");
+
             if ($code !== 200) {
+                trace_log("Non-200 response code -> {$code}");
                 return false;
             }
 
-            $content_type = wp_remote_retrieve_header($response, 'content-type');
+            $content_type = \wp_remote_retrieve_header($response, 'content-type');
+            trace_log("Content-Type -> " . ($content_type ?: 'none'));
+
             if (!$content_type || stripos($content_type, 'image/') !== 0) {
-                // Not an image → likely HTML 404 or other junk
+                trace_log("Invalid content-type -> {$content_type}");
                 return false;
             }
 
-            $body = wp_remote_retrieve_body($response);
+            $body = \wp_remote_retrieve_body($response);
             if (!$body) {
+                trace_log("Empty response body");
                 return false;
             }
 
-            // Extra verification: ensure it's an actual image
             if (function_exists('getimagesizefromstring')) {
                 $info = @getimagesizefromstring($body);
                 if ($info === false) {
+                    trace_log("getimagesizefromstring() failed — not a valid image");
                     return false;
+                } else {
+                    trace_log("Image validated successfully ({$info[0]}x{$info[1]})");
                 }
             }
 
+            trace_log("Image fetch successful from {$url}");
             return $body;
         }
 
-        // Fallback: allow_url_fopen / cURL (non-WP env or very early)
-        // ---------- allow_url_fopen ----------
-        if (ini_get('allow_url_fopen')) {
-            $context = stream_context_create([
-                'http' => [
-                    'method'        => 'GET',
-                    'ignore_errors' => true,
-                    'timeout'       => 20,
-                ],
-            ]);
+        // Fallback
+        trace_log("wp_remote_get() not available — falling back to cURL");
+        $data = self::fetch_image_with_curl($url);
 
-            $data = @file_get_contents($url, false, $context);
-            if ($data === false || empty($http_response_header)) {
-                return false;
-            }
-
-            // Parse headers
-            $headers = array_change_key_case(array_combine(
-                array_map(function($h){ return trim(strtok($h, ':')); }, $http_response_header),
-                array_map(function($h){ return trim(substr($h, strpos($h, ':') + 1)); }, $http_response_header)
-            ), CASE_LOWER);
-
-            // Status line
-            if (stripos($http_response_header[0], '200') === false) {
-                return false;
-            }
-
-            if (empty($headers['content-type']) || stripos($headers['content-type'], 'image/') !== 0) {
-                return false;
-            }
-
-            if (function_exists('getimagesizefromstring')) {
-                $info = @getimagesizefromstring($data);
-                if ($info === false) {
-                    return false;
-                }
-            }
-
-            return $data;
+        if ($data === false) {
+            trace_log("cURL fetch failed for {$url}");
+        } else {
+            trace_log("cURL fetch successful for {$url}");
         }
 
-        // ---------- cURL fallback ----------
-        return self::fetch_image_with_curl($url);
+        return $data;
     }
 
     function fetch_image_with_curl($url)
     {
+        trace_log("fetch_image_with_curl() called with URL: {$url}");
+
         $ch = curl_init();
 
         curl_setopt_array($ch, [
@@ -165,52 +149,68 @@ class WooCommerceProductManager
             CURLOPT_FOLLOWLOCATION => true,
             CURLOPT_MAXREDIRS      => 5,
             CURLOPT_TIMEOUT        => 20,
-            CURLOPT_HEADER         => true,  // we want headers + body
+            CURLOPT_HEADER         => true,
         ]);
+
+        trace_log("cURL initialized and options set");
 
         $response = curl_exec($ch);
 
         if ($response === false) {
+            $error = curl_error($ch);
+            trace_log("cURL exec failed: {$error}");
             curl_close($ch);
             return false;
         }
 
-        $header_size = curl_getinfo($ch, CURLINFO_HEADER_SIZE);
-        $headers_raw = substr($response, 0, $header_size);
-        $body        = substr($response, $header_size);
-
-        $http_code   = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $header_size  = curl_getinfo($ch, CURLINFO_HEADER_SIZE);
+        $body         = substr($response, $header_size);
+        $http_code    = curl_getinfo($ch, CURLINFO_HTTP_CODE);
         $content_type = curl_getinfo($ch, CURLINFO_CONTENT_TYPE);
+
+        trace_log("HTTP code: {$http_code}");
+        trace_log("Content-Type: " . ($content_type ?: 'none'));
+        trace_log("Header size: {$header_size}, Body length: " . strlen($body));
 
         curl_close($ch);
 
         if ($http_code !== 200) {
+            trace_log("Non-200 HTTP response code ({$http_code})");
             return false;
         }
 
         if (!$content_type || stripos($content_type, 'image/') !== 0) {
+            trace_log("Invalid or missing content-type: {$content_type}");
             return false;
         }
 
         if (!$body) {
+            trace_log("Empty response body");
             return false;
         }
 
         if (function_exists('getimagesizefromstring')) {
             $info = @getimagesizefromstring($body);
             if ($info === false) {
+                trace_log("getimagesizefromstring() failed — not a valid image");
                 return false;
+            } else {
+                trace_log("Image validated successfully ({$info[0]}x{$info[1]})");
             }
         }
 
+        trace_log("Image successfully fetched via cURL from {$url}");
         return $body;
     }
 
 
     private function upload_image($image_url)
     {
+        trace_log("upload_image() called with URL: " . $image_url);
+
         // Validate URL
         if (!\filter_var($image_url, FILTER_VALIDATE_URL)) {
+            trace_log("Invalid image URL: " . $image_url);
             return false;
         }
 
@@ -219,14 +219,17 @@ class WooCommerceProductManager
         }
 
         $upload_dir = \wp_upload_dir();
+        trace_log("Upload directory: " . print_r($upload_dir, true));
 
         // Ensure upload directory is writable and valid
         if (!empty($upload_dir['error'])) {
+            trace_log("Upload dir error: " . $upload_dir['error']);
             return false;
         }
 
         $image_data = self::fetch_image_data($image_url);
         if ($image_data === false) {
+            trace_log("Failed to fetch image data from URL: " . $image_url);
             return false;
         }
 
@@ -234,6 +237,7 @@ class WooCommerceProductManager
         $filename  = \basename(parse_url($image_url, PHP_URL_PATH));
         $filename  = \wp_unique_filename($upload_dir['path'], $filename);
         $file_path = trailingslashit($upload_dir['path']) . $filename;
+        trace_log("Resolved file path: " . $file_path);
 
         // Save file using WordPress filesystem API when possible
         if (!function_exists('WP_Filesystem')) {
@@ -245,19 +249,25 @@ class WooCommerceProductManager
         $file_written = false;
         if ($wp_filesystem && $wp_filesystem->put_contents($file_path, $image_data, FS_CHMOD_FILE)) {
             $file_written = true;
+            trace_log("File written using WP_Filesystem: " . $file_path);
         } elseif (\file_put_contents($file_path, $image_data) !== false) {
             $file_written = true;
+            trace_log("File written using file_put_contents: " . $file_path);
         }
 
         if (!$file_written || !file_exists($file_path)) {
+            trace_log("File not written or missing: " . $file_path);
             return false;
         }
 
         // Validate MIME type
         $wp_filetype = \wp_check_filetype($filename, null);
+        trace_log("Detected filetype: " . print_r($wp_filetype, true));
+
         if (empty($wp_filetype['type'])) {
+            trace_log("Invalid MIME type for file: " . $filename);
             if (file_exists($file_path)) {
-                \unlink($file_path); // use normal unlink only if valid file
+                \unlink($file_path);
             }
             return false;
         }
@@ -272,21 +282,28 @@ class WooCommerceProductManager
 
         $attachment_id = \wp_insert_attachment($attachment, $file_path);
         if (is_wp_error($attachment_id) || !$attachment_id) {
-            // Clean up file if attachment insert failed
+            trace_log("Attachment insert failed for file: " . $file_path);
             if (file_exists($file_path)) {
                 \unlink($file_path);
             }
             return false;
         }
 
+        trace_log("Attachment created successfully. ID: " . $attachment_id);
+
         // Generate and save attachment metadata
         $attach_data = \wp_generate_attachment_metadata($attachment_id, $file_path);
         if (!is_wp_error($attach_data) && !empty($attach_data)) {
             \wp_update_attachment_metadata($attachment_id, $attach_data);
+            trace_log("Attachment metadata generated and updated for ID: " . $attachment_id);
+        } else {
+            trace_log("Failed to generate attachment metadata for ID: " . $attachment_id);
         }
 
+        trace_log("upload_image() completed successfully. Attachment ID: " . $attachment_id);
         return $attachment_id;
     }
+
 
     public function remove_variant($data)
     {
@@ -532,9 +549,16 @@ class WooCommerceProductManager
         if ($isNew || $auto_options['global_product_auto_title'] == '1') {
             $product->set_name($title);
         }
-        if ($isNew || $auto_options['global_product_auto_caption'] == '1') {
-            $product->set_description($caption ?? '');
+
+        //به درخواست موبو - این بخش حذف شد
+        // if ($isNew || $auto_options['global_product_auto_caption'] == '1') {
+        //     $product->set_description($caption ?? '');
+        // }
+        if ($isNew) {
+            $product->set_description('');
         }
+
+
         if ($isNew || $auto_options['global_product_auto_slug'] == '1') {
             $product->set_slug($product_url);
         }
@@ -689,41 +713,100 @@ class WooCommerceProductManager
     private function handle_images($product, $images)
     {
         global $wpdb;
+
+        // Start
+        trace_log('handle_images(): start');
+
+        // Basic validation
+        if (!$product instanceof \WC_Product) {
+            trace_log('handle_images(): invalid $product. Got: ' . (is_object($product) ? get_class($product) : gettype($product)));
+            return;
+        }
+
+        if (!is_array($images)) {
+            trace_log('handle_images(): $images is not an array. Got: ' . gettype($images));
+            return;
+        }
+
+        trace_log('handle_images(): received images: ' . print_r($images, true));
+
         $image_ids = [];
 
         if (!empty($images)) {
-            foreach ($images as $image) {
+            foreach ($images as $index => $image) {
+                trace_log("handle_images(): processing index {$index}: " . print_r($image, true));
+
+                // Ensure required keys
+                if (empty($image['id']) || empty($image['url'])) {
+                    trace_log("handle_images(): missing 'id' or 'url' at index {$index}, skipping.");
+                    continue;
+                }
+
+                // Check if this GUID already exists
                 $query = $wpdb->prepare(
-                    "SELECT count(*) FROM {$wpdb->postmeta} WHERE meta_key = 'img_guid' AND meta_value = %s",
+                    "SELECT COUNT(*) FROM {$wpdb->postmeta} WHERE meta_key = 'img_guid' AND meta_value = %s",
                     $image['id']
                 );
                 $isImgExist = $wpdb->get_var($query);
 
+                trace_log("handle_images(): guid {$image['id']} exists count: {$isImgExist}");
+
                 if ($isImgExist == 0) {
+                    // Upload new image
+                    trace_log("handle_images(): uploading new image from URL: {$image['url']}");
                     $image_id = self::upload_image($image['url']);
-                    if ($image_id) {
+                    trace_log("handle_images(): upload_image() result: " . var_export($image_id, true));
+
+                    if (!empty($image_id)) {
                         $image_ids[] = $image_id;
-                        \update_post_meta($image_id, 'img_guid', $image['id']);
+                        update_post_meta($image_id, 'img_guid', $image['id']);
+                        trace_log("handle_images(): set img_guid {$image['id']} for attachment {$image_id}");
+                    } else {
+                        trace_log("handle_images(): upload_image() failed for {$image['url']}");
                     }
+                } else {
+                    trace_log("handle_images(): image with guid {$image['id']} already exists, not re-uploading.");
                 }
             }
 
-            $product->set_gallery_image_ids($image_ids);
+            trace_log('handle_images(): collected image_ids: ' . print_r($image_ids, true));
+
+            // Set gallery + featured image if we have new uploads
             if (!empty($image_ids)) {
-                $product->set_image_id($image_ids[array_key_last($image_ids)]);
-            } else if (!empty($images)) {
+                $product->set_gallery_image_ids($image_ids);
+                $featured_id = $image_ids[array_key_last($image_ids)];
+                $product->set_image_id($featured_id);
+                trace_log("handle_images(): set gallery and featured image_id: {$featured_id}");
+            } else {
+                // No new uploads; try to reuse last known img_guid
+                $last_image = end($images);
+                trace_log('handle_images(): no new images uploaded, using fallback last_image: ' . print_r($last_image, true));
 
-                $last_image = $images[array_key_last($images)];
+                if (!empty($last_image['id'])) {
+                    $query = $wpdb->prepare(
+                        "SELECT post_id FROM {$wpdb->postmeta} WHERE meta_key = 'img_guid' AND meta_value = %s",
+                        $last_image['id']
+                    );
+                    $img_id = $wpdb->get_var($query);
+                    trace_log("handle_images(): fallback lookup for guid {$last_image['id']} returned post_id: {$img_id}");
 
-                $query = $wpdb->prepare(
-                    "SELECT post_id FROM {$wpdb->postmeta} WHERE meta_key = 'img_guid' AND meta_value = %s",
-                    $last_image[0]['id']
-                );
-                $img_id = $wpdb->get_var($query);
-                $product->set_image_id($img_id);
+                    if (!empty($img_id)) {
+                        $product->set_image_id($img_id);
+                        trace_log("handle_images(): set featured image via fallback: {$img_id}");
+                    } else {
+                        trace_log("handle_images(): no attachment found for fallback guid {$last_image['id']}");
+                    }
+                } else {
+                    trace_log('handle_images(): fallback failed, last_image has no id');
+                }
             }
+        } else {
+            trace_log('handle_images(): empty $images array, nothing to do.');
         }
+
+        trace_log('handle_images(): end');
     }
+
 
     private function update_attributes($product, $attributes, $wp_product_id)
     {

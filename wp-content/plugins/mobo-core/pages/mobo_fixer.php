@@ -9,6 +9,7 @@ add_action('admin_post_mobo_optimize_database', 'mobo_optimize_database');
 add_action('admin_post_mobo_delete_all_prod', 'mobo_delete_all_prod');
 add_action('admin_post_mobo_core_remCrons', 'mobo_core_remCrons');
 add_action('admin_post_mobo_core_fixImages', 'mobo_core_fixImages');
+add_action('admin_post_mobo_core_remProdDesc', 'mobo_core_remProdDesc');
 
 function mobo_optimize_database()
 {
@@ -395,6 +396,62 @@ function mobo_core_fixImages() {
     exit;
 }
 
+function mobo_core_remProdDesc() {
+    trace_log();
+    trace_log('mobo_core_remProdDesc start');
+
+    // Security check
+    if ( ! current_user_can('administrator')) {
+        wp_die('You are not allowed to perform this action.');
+    }
+
+    // (Optional but recommended) Nonce check if triggered from a custom button/form
+    // if ( ! isset($_GET['_wpnonce']) || ! wp_verify_nonce($_GET['_wpnonce'], 'mobo_core_remProdDesc') ) {
+    //     wp_die('Invalid nonce.');
+    // }
+
+    // Query products that have 'product_guid' meta key
+    $args = array(
+        'post_type'      => 'product',
+        'posts_per_page' => -1, // OK for small/mid catalogs; use batching for huge ones
+        'meta_query'     => array(
+            array(
+                'key'     => 'product_guid',
+                'compare' => 'EXISTS',
+            ),
+        ),
+        'fields' => 'ids',
+    );
+
+    $query = new WP_Query($args);
+
+    if ($query->have_posts()) {
+        foreach ($query->posts as $product_id) {
+            wp_update_post(array(
+                'ID'           => $product_id,
+                'post_content' => '',
+                'post_excerpt' => '',
+            ));
+
+            trace_log("Cleared description for product ID: $product_id");
+        }
+
+        trace_log('mobo_core_remProdDesc completed');
+
+        // Optional: store result for an admin notice
+        set_transient('mobo_core_remProdDesc_notice', 'Descriptions cleared for all products with product_guid.', 60);
+    } else {
+        trace_log('No products found with product_guid');
+        set_transient('mobo_core_remProdDesc_notice', 'No products found with product_guid.', 60);
+    }
+
+    wp_reset_postdata();
+
+    // Redirect back (no echo before this)
+    $redirect_url = wp_get_referer() ? wp_get_referer() : admin_url();
+    wp_redirect($redirect_url);
+    exit;
+}
 
 
 
@@ -449,6 +506,12 @@ function mobo_core_fixer_page()
         <br>
         <br>
         <a href="<?php echo admin_url('admin-post.php?action=mobo_core_fixImages'); ?>">Fix Images</a>
+        <br>
+        <br>
+        
+        <br>
+        <br>
+        <a href="<?php echo admin_url('admin-post.php?action=mobo_core_remProdDesc'); ?>">حذف توضیحات محصولات موبو</a>
         <br>
         <br>
 </div>

@@ -112,11 +112,9 @@ class ApiFunctions
     }
 
     
-    public function getProductByGuidAsJson($productGuid, $onlyInStock)
+    public function getProductByGuidAsJson($productGuid)
     {
-        $onlyInStock = $onlyInStock == '1' ? 'true' : null;
-
-        $productsArray = $this->fetch_data_from_api($this->base_url . "get-products-by-guid?ProductId=$productGuid&onlyInStock=$onlyInStock");
+        $productsArray = $this->fetch_data_from_api($this->base_url . "get-products-by-guid?ProductId=$productGuid");
         return $productsArray;
     }
 
