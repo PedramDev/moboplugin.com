@@ -72,12 +72,51 @@ class ApiFunctions
         return $body;
     }
 
+    public function getImageByGuid($img_guid)
+    {
+        $token = get_option('mobo_core_token');
+        // Set up the headers
+        $args = [
+            'headers' => [
+                'Token' => $token,
+            ],
+        ];
+
+        $url = $this->base_url . "image-url/$img_guid";
+
+        // Make a GET request
+        $response = \wp_remote_get($url, $args);
+
+        // Check for errors
+        if (\is_wp_error($response)) {
+
+            trace_log('error in response:get-products-count :');
+            trace_log($url);
+            trace_log(print_r($response));
+            trace_log(print_r($args));
+            return false;
+        }
+
+        $body = \wp_remote_retrieve_body($response);
+
+        return $body;
+    }
+
     public function getProductsAsJson($pageNumber, $recordPerPage, $onlyInStock)
     {
         $onlyInStock = $onlyInStock == '1' ? 'true' : null;
 
         $productsArray = $this->fetch_data_from_api($this->base_url . "get-products?PageNumber=$pageNumber&RecordPerPage=$recordPerPage&onlyInStock=$onlyInStock");
-        // $productsArray = $this->fetch_data_from_api($this->base_url . "get-products-test?ProductPortalId=172122254");
+        // $productsArray = $this->fetch_data_from_api($this->base_url . "get-products-by-portal-id?ProductPortalId=172122254");
+        return $productsArray;
+    }
+
+    
+    public function getProductByGuidAsJson($productGuid, $onlyInStock)
+    {
+        $onlyInStock = $onlyInStock == '1' ? 'true' : null;
+
+        $productsArray = $this->fetch_data_from_api($this->base_url . "get-products-by-guid?ProductId=$productGuid&onlyInStock=$onlyInStock");
         return $productsArray;
     }
 

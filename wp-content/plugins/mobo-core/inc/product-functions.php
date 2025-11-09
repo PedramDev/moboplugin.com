@@ -67,116 +67,225 @@ class WooCommerceProductManager
 
     function fetch_image_data($url)
     {
-        // Check if allow_url_fopen is enabled
-        if (ini_get('allow_url_fopen')) {
-            $image_data = @file_get_contents($url);
-
-            if ($image_data === false) {
-                // Handle error for file_get_contents
-                return 'Error fetching image using file_get_contents: ' . error_get_last()['message'];
-            }
-        } else {
-            // Fall back to cURL if allow_url_fopen is disabled
-            $image_data = self::fetch_image_with_curl($url);
-            if (is_string($image_data)) {
-                return $image_data; // Return error from cURL
-            }
+        // Basic URL validation
+        if (!filter_var($url, FILTER_VALIDATE_URL)) {
+            return false;
         }
 
-        return $image_data; // Return the fetched image data
+        // Prefer WordPress HTTP API when available
+        if (function_exists('wp_remote_get')) {
+            $response = wp_remote_get($url, [
+                'timeout'     => 20,
+                'redirection' => 5,
+            ]);
+
+            if (is_wp_error($response)) {
+                return false;
+            }
+
+            $code = wp_remote_retrieve_response_code($response);
+            if ($code !== 200) {
+                return false;
+            }
+
+            $content_type = wp_remote_retrieve_header($response, 'content-type');
+            if (!$content_type || stripos($content_type, 'image/') !== 0) {
+                // Not an image → likely HTML 404 or other junk
+                return false;
+            }
+
+            $body = wp_remote_retrieve_body($response);
+            if (!$body) {
+                return false;
+            }
+
+            // Extra verification: ensure it's an actual image
+            if (function_exists('getimagesizefromstring')) {
+                $info = @getimagesizefromstring($body);
+                if ($info === false) {
+                    return false;
+                }
+            }
+
+            return $body;
+        }
+
+        // Fallback: allow_url_fopen / cURL (non-WP env or very early)
+        // ---------- allow_url_fopen ----------
+        if (ini_get('allow_url_fopen')) {
+            $context = stream_context_create([
+                'http' => [
+                    'method'        => 'GET',
+                    'ignore_errors' => true,
+                    'timeout'       => 20,
+                ],
+            ]);
+
+            $data = @file_get_contents($url, false, $context);
+            if ($data === false || empty($http_response_header)) {
+                return false;
+            }
+
+            // Parse headers
+            $headers = array_change_key_case(array_combine(
+                array_map(function($h){ return trim(strtok($h, ':')); }, $http_response_header),
+                array_map(function($h){ return trim(substr($h, strpos($h, ':') + 1)); }, $http_response_header)
+            ), CASE_LOWER);
+
+            // Status line
+            if (stripos($http_response_header[0], '200') === false) {
+                return false;
+            }
+
+            if (empty($headers['content-type']) || stripos($headers['content-type'], 'image/') !== 0) {
+                return false;
+            }
+
+            if (function_exists('getimagesizefromstring')) {
+                $info = @getimagesizefromstring($data);
+                if ($info === false) {
+                    return false;
+                }
+            }
+
+            return $data;
+        }
+
+        // ---------- cURL fallback ----------
+        return self::fetch_image_with_curl($url);
     }
 
     function fetch_image_with_curl($url)
     {
         $ch = curl_init();
 
-        // Set cURL options
-        curl_setopt($ch, CURLOPT_URL, $url);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt_array($ch, [
+            CURLOPT_URL            => $url,
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_FOLLOWLOCATION => true,
+            CURLOPT_MAXREDIRS      => 5,
+            CURLOPT_TIMEOUT        => 20,
+            CURLOPT_HEADER         => true,  // we want headers + body
+        ]);
 
-        $image_data = curl_exec($ch);
+        $response = curl_exec($ch);
 
-        if ($image_data === false) {
-            // Handle cURL error
-            return 'Error fetching image using cURL: ' . curl_error($ch);
+        if ($response === false) {
+            curl_close($ch);
+            return false;
         }
 
+        $header_size = curl_getinfo($ch, CURLINFO_HEADER_SIZE);
+        $headers_raw = substr($response, 0, $header_size);
+        $body        = substr($response, $header_size);
+
+        $http_code   = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $content_type = curl_getinfo($ch, CURLINFO_CONTENT_TYPE);
+
         curl_close($ch);
-        return $image_data; // Return the image data
+
+        if ($http_code !== 200) {
+            return false;
+        }
+
+        if (!$content_type || stripos($content_type, 'image/') !== 0) {
+            return false;
+        }
+
+        if (!$body) {
+            return false;
+        }
+
+        if (function_exists('getimagesizefromstring')) {
+            $info = @getimagesizefromstring($body);
+            if ($info === false) {
+                return false;
+            }
+        }
+
+        return $body;
     }
+
 
     private function upload_image($image_url)
     {
-        // Ensure the URL is valid
-        if (\filter_var($image_url, FILTER_VALIDATE_URL)) {
-            if (! function_exists('wp_generate_attachment_metadata')) {
-                require_once ABSPATH . 'wp-admin/includes/image.php';
+        // Validate URL
+        if (!\filter_var($image_url, FILTER_VALIDATE_URL)) {
+            return false;
+        }
+
+        if (!function_exists('wp_generate_attachment_metadata')) {
+            require_once ABSPATH . 'wp-admin/includes/image.php';
+        }
+
+        $upload_dir = \wp_upload_dir();
+
+        // Ensure upload directory is writable and valid
+        if (!empty($upload_dir['error'])) {
+            return false;
+        }
+
+        $image_data = self::fetch_image_data($image_url);
+        if ($image_data === false) {
+            return false;
+        }
+
+        // Create unique and clean filename
+        $filename  = \basename(parse_url($image_url, PHP_URL_PATH));
+        $filename  = \wp_unique_filename($upload_dir['path'], $filename);
+        $file_path = trailingslashit($upload_dir['path']) . $filename;
+
+        // Save file using WordPress filesystem API when possible
+        if (!function_exists('WP_Filesystem')) {
+            require_once ABSPATH . 'wp-admin/includes/file.php';
+        }
+        \WP_Filesystem();
+        global $wp_filesystem;
+
+        $file_written = false;
+        if ($wp_filesystem && $wp_filesystem->put_contents($file_path, $image_data, FS_CHMOD_FILE)) {
+            $file_written = true;
+        } elseif (\file_put_contents($file_path, $image_data) !== false) {
+            $file_written = true;
+        }
+
+        if (!$file_written || !file_exists($file_path)) {
+            return false;
+        }
+
+        // Validate MIME type
+        $wp_filetype = \wp_check_filetype($filename, null);
+        if (empty($wp_filetype['type'])) {
+            if (file_exists($file_path)) {
+                \unlink($file_path); // use normal unlink only if valid file
             }
+            return false;
+        }
 
+        // Create attachment entry
+        $attachment = [
+            'post_mime_type' => $wp_filetype['type'],
+            'post_title'     => \sanitize_file_name(pathinfo($filename, PATHINFO_FILENAME)),
+            'post_content'   => '',
+            'post_status'    => 'inherit',
+        ];
 
-
-            $upload_dir = \wp_upload_dir();
-            $image_data = self::fetch_image_data($image_url);
-            $filename = \basename($image_url);
-
-            // Check if the image was successfully retrieved
-            if ($image_data) {
-                $file_path = $upload_dir['path'] . '/' . $filename;
-                \file_put_contents($file_path, $image_data);
-
-                // Prepare the attachment
-                $wp_filetype = \wp_check_filetype($filename, null);
-                $attachment = [
-                    'post_mime_type' => $wp_filetype['type'],
-                    'post_title' => \sanitize_file_name($filename),
-                    'post_content' => '',
-                    'post_status' => 'inherit'
-                ];
-
-                // Insert the attachment into the media library
-                $attachment_id = \wp_insert_attachment($attachment, $file_path);
-                // Generate attachment metadata
-                $attach_data = \wp_generate_attachment_metadata($attachment_id, $file_path);
-                \wp_update_attachment_metadata($attachment_id, $attach_data);
-
-                return $attachment_id;
+        $attachment_id = \wp_insert_attachment($attachment, $file_path);
+        if (is_wp_error($attachment_id) || !$attachment_id) {
+            // Clean up file if attachment insert failed
+            if (file_exists($file_path)) {
+                \unlink($file_path);
             }
-        }
-        return false; // Return false if the image could not be uploaded
-    }
-
-    public function remove_product($data)
-    {
-        if (empty($data) || !isset($data['listOfId'])) {
-            return 'Invalid JSON data';
+            return false;
         }
 
-        $ids = $data['listOfId'];
-
-        // Ensure $ids is an array
-        if (!is_array($ids)) {
-            $ids = [$ids]; // Convert to array if it's not
+        // Generate and save attachment metadata
+        $attach_data = \wp_generate_attachment_metadata($attachment_id, $file_path);
+        if (!is_wp_error($attach_data) && !empty($attach_data)) {
+            \wp_update_attachment_metadata($attachment_id, $attach_data);
         }
 
-        global $wpdb;
-
-        // Prepare the placeholders for the SQL query
-        $placeholders = implode(',', array_fill(0, count($ids), '%d'));
-
-        // Prepare and execute the SQL query to delete products
-        $query = $wpdb->prepare(
-            "DELETE FROM $wpdb->posts
-        WHERE ID IN (
-            SELECT ID FROM $wpdb->postmeta
-            WHERE meta_key = 'product_guid' AND meta_value IN ($placeholders)
-        ) AND post_type = 'product'",
-            ...$ids // Unpack the array into the query
-        );
-
-        // Execute the query
-        $deleted_rows = $wpdb->query($query);
-
-        return $deleted_rows ? "$deleted_rows products deleted." : 'No products found.';
+        return $attachment_id;
     }
 
     public function remove_variant($data)
@@ -269,7 +378,7 @@ class WooCommerceProductManager
         $auto_options = self::get_global_product_options();
         trace_log();
 
-        trace_log(print_r($data));
+        trace_log($data);
 
         foreach ($data['data'] as $product_data) {
             trace_log();
@@ -601,11 +710,14 @@ class WooCommerceProductManager
 
             $product->set_gallery_image_ids($image_ids);
             if (!empty($image_ids)) {
-                $product->set_image_id($image_ids[0]);
+                $product->set_image_id($image_ids[array_key_last($image_ids)]);
             } else if (!empty($images)) {
+
+                $last_image = $images[array_key_last($images)];
+
                 $query = $wpdb->prepare(
                     "SELECT post_id FROM {$wpdb->postmeta} WHERE meta_key = 'img_guid' AND meta_value = %s",
-                    $images[0]['id']
+                    $last_image[0]['id']
                 );
                 $img_id = $wpdb->get_var($query);
                 $product->set_image_id($img_id);

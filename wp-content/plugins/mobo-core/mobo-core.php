@@ -2,7 +2,7 @@
 /*
 Plugin Name: mobo-core
 Description: بروزرسانی خودکار محصولات از https://mobomobo.ir/
-Version: 5.6
+Version: 6.0
 Author: Pedram Karimi
 Author URI: http://github.com/PedramDev/
 // Requires PHP: <=8.1.0
