@@ -321,6 +321,11 @@ function mobo_core_admin_page()
                 </p>
 
 
+                <p>
+                    لطفا در صورتی که تیک قسمت دسته بندی را برداشتید - حتما دسته بندی پیش فرض را پر کنید تا خطا در بخش دریافت محصولات نداشته باشید
+                </p>
+
+
                 <label for="token">Token:</label>
                 <input type="text" style="font-family:'Courier New', Courier, monospace;" dir="ltr" name="token" id="token" value="<?php echo get_option('mobo_core_token'); ?>" />
 
