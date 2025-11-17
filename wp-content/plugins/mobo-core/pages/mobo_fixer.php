@@ -10,6 +10,7 @@ add_action('admin_post_mobo_delete_all_prod', 'mobo_delete_all_prod');
 add_action('admin_post_mobo_core_remCrons', 'mobo_core_remCrons');
 add_action('admin_post_mobo_core_fixImages', 'mobo_core_fixImages');
 add_action('admin_post_mobo_core_remProdDesc', 'mobo_core_remProdDesc');
+add_action('admin_post_mobo_core_removeAllProducts', 'mobo_core_removeAllProducts');
 
 function mobo_optimize_database()
 {
@@ -161,17 +162,17 @@ function mobo_delete_all_prod()
 
 
     $wpdb->query(
-    $wpdb->prepare("
+        $wpdb->prepare("
         DELETE from {$table_prefix}posts
         where id in (SELECT post_id FROM `{$table_prefix}postmeta` WHERE meta_key like '%_guid');
-        "    )
+        ")
     );
 
     $wpdb->query(
-    $wpdb->prepare("
+        $wpdb->prepare("
         DELETE FROM {$table_prefix}postmeta
         WHERE post_id NOT IN (SELECT id FROM {$table_prefix}posts);
-        "    )
+        ")
     );
 
     $wpdb->query(
@@ -197,7 +198,8 @@ function mobo_delete_all_prod()
     exit;
 }
 
-function mobo_core_remCrons(){
+function mobo_core_remCrons()
+{
     trace_log();
     trace_log('mobo_core_remCrons');
 
@@ -208,11 +210,11 @@ function mobo_core_remCrons(){
     global $wpdb;
     $table_prefix = $wpdb->prefix;  // Get the table prefix
     // Optimize the table
-    
+
     $wpdb->query(
         "DELETE FROM {$table_prefix}options WHERE option_name = 'cron';"
     );
-    
+
     trace_log();
     // Redirect with a success message
     wp_redirect(wp_get_referer());
@@ -220,8 +222,70 @@ function mobo_core_remCrons(){
     trace_log();
 }
 
+function mobo_core_removeAllProducts()
+{
+    trace_log();
+    trace_log('mobo_core_removeAllProducts');
 
-function mobo_core_fixImages() {
+    if ( ! current_user_can('administrator') ) {
+        wp_die('You are not allowed to perform this action.');
+    }
+
+    global $wpdb;
+    $table_prefix = $wpdb->prefix;  // e.g. 'wp_'
+
+    // 1) Delete product meta
+    $wpdb->query("
+        DELETE pm
+        FROM {$table_prefix}postmeta AS pm
+        INNER JOIN {$table_prefix}posts AS p ON pm.post_id = p.ID
+        WHERE p.post_type IN ('product', 'product_variation')
+    ");
+
+    // 2) Delete term relationships (categories, tags, attributes links)
+    $wpdb->query("
+        DELETE tr
+        FROM {$table_prefix}term_relationships AS tr
+        INNER JOIN {$table_prefix}posts AS p ON tr.object_id = p.ID
+        WHERE p.post_type IN ('product', 'product_variation')
+    ");
+
+    // 3) Delete the products and variations themselves
+    $wpdb->query("
+        DELETE FROM {$table_prefix}posts
+        WHERE post_type IN ('product', 'product_variation')
+    ");
+
+    trace_log('mobo_core_removeAllProducts: products deleted');
+
+    // Clear transients
+    $wpdb->query(
+        $wpdb->prepare(
+            "DELETE FROM {$table_prefix}options WHERE option_name LIKE %s",
+            '_transient_%'
+        )
+    );
+
+    $wpdb->query(
+        $wpdb->prepare(
+            "DELETE FROM {$table_prefix}options WHERE option_name LIKE %s",
+            '_transient_timeout_%'
+        )
+    );
+
+    // Optimize tables (optional, but fine)
+    $wpdb->query("OPTIMIZE TABLE {$table_prefix}options");
+    $wpdb->query("OPTIMIZE TABLE {$table_prefix}posts");
+    $wpdb->query("OPTIMIZE TABLE {$table_prefix}postmeta");
+
+    wp_redirect( wp_get_referer() ? wp_get_referer() : admin_url() );
+    exit;
+}
+
+
+
+function mobo_core_fixImages()
+{
     $apiFunc     = new \MoboCore\ApiFunctions();               // getImageByGuid()
     $productFunc = new \MoboCore\WooCommerceProductManager();  // fetch_image_data()
 
@@ -396,12 +460,13 @@ function mobo_core_fixImages() {
     exit;
 }
 
-function mobo_core_remProdDesc() {
+function mobo_core_remProdDesc()
+{
     trace_log();
     trace_log('mobo_core_remProdDesc start');
 
     // Security check
-    if ( ! current_user_can('administrator')) {
+    if (! current_user_can('administrator')) {
         wp_die('You are not allowed to perform this action.');
     }
 
@@ -460,10 +525,11 @@ function mobo_core_fixer_page()
 ?>
 
     <style>
-        .container{
+        .container {
             margin: 0 auto;
             padding: 20px 200px;
         }
+
         .table-container {
             margin: 20px 0;
         }
@@ -492,8 +558,8 @@ function mobo_core_fixer_page()
             background-color: #eaeaea;
         }
     </style>
-<div class="container">
-    
+    <div class="container">
+
         <!-- <a href="<?php echo admin_url('admin-post.php?action=mobo_optimize_database'); ?>">Optimize Database</a> -->
         <br>
         <br>
@@ -508,13 +574,30 @@ function mobo_core_fixer_page()
         <a href="<?php echo admin_url('admin-post.php?action=mobo_core_fixImages'); ?>">Fix Images</a>
         <br>
         <br>
-        
+
         <br>
         <br>
         <a href="<?php echo admin_url('admin-post.php?action=mobo_core_remProdDesc'); ?>">حذف توضیحات محصولات موبو</a>
         <br>
         <br>
-</div>
+
+        <br>
+        <br>
+        <a href="<?php echo admin_url('admin-post.php?action=mobo_core_removeAllProducts'); ?>">حذف همه ی محصولات</a>
+        <br>
+        <p>
+            بعد از حذف محصولات :
+            <br>
+            WooCommerce → Status → Tools
+            <br>
+            Clear transients
+            <br>
+            Regenerate product lookup tables
+            <br>
+            Optionally, Recount terms
+        </p>
+        <br>
+    </div>
 
 <?php
 }

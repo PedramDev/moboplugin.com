@@ -16,10 +16,10 @@ function mobo_core_admin_page()
     // check cronjob is open
     if(defined('DISABLE_WP_CRON')){
         if(!DISABLE_WP_CRON){
-            $cronjob_message = '<p class"success">کرون جاب فعال است</p>';
+            $cronjob_message = '<p class="success">کرون جاب فعال است</p>';
         }
         else{
-            $cronjob_message = '<p class"error">کرون جاب غیرفعال است
+            $cronjob_message = '<p class="error">کرون جاب غیرفعال است
             <br/>
             همین حالا فعالش کنید!
             <br/>
@@ -27,6 +27,129 @@ function mobo_core_admin_page()
             </p>';
         }
     }
+
+    $max_execution_time = ini_get('max_execution_time');
+    $max_input_vars = ini_get('max_input_vars');
+
+    $memory_limit = ini_get('memory_limit');
+    $upload_max_filesize = ini_get('upload_max_filesize');
+    $post_max_size = ini_get('post_max_size');
+
+
+
+    if($max_execution_time < 300){
+        echo '
+        <p class="error">
+            max_execution_time کمتر از ۳۰۰ ثانیه است و ممکن است در ذخیره سازی محصولات مشکل بوجود بیاید، حتما بالای ۳۰۰ بگذارید
+            <br/>
+            max_execution_time فعلی : '. $max_execution_time .
+        '</p>
+        کد برای کپی: (php.ini , user.ini)
+        <br/>
+        <code>
+            max_execution_time = 300
+        </code>
+        ';
+    }
+    else{
+          echo '
+        <p class="success">
+            max_execution_time فعلی : '. $max_execution_time .
+        '</p>
+        ';
+    }
+
+    if($max_input_vars < 3000){
+        echo '
+        <p class="error">
+            max_input_vars کمتر از ۳۰۰۰ ثانیه است و ممکن است در ذخیره سازی محصولات مشکل بوجود بیاید، حتما بالای ۳۰۰۰ بگذارید
+            <br/>
+            max_input_vars فعلی : '. $max_input_vars .
+        '</p>
+        کد برای کپی: (php.ini , user.ini)
+        <br/>
+        <code>
+            max_input_vars = 3000
+        </code>
+        ';
+    }
+    else{
+          echo '
+        <p class="success">
+            max_input_vars فعلی : '. $max_input_vars .
+        '</p>
+        ';
+    }
+
+
+    // --- memory_limit ---
+    if ((int)$memory_limit < 256) {
+        echo '
+        <p class="error">
+            memory_limit کمتر از ۲۵۶MB است و ممکن است باعث خطا در ذخیره‌سازی یا پردازش شود.
+            <br/>
+            memory_limit فعلی : ' . $memory_limit . '
+        </p>
+        کد برای کپی: (php.ini , user.ini)
+        <br/>
+        <code>
+            memory_limit = 256M
+        </code>
+        ';
+    } else {
+        echo '
+        <p class="success">
+            memory_limit فعلی : ' . $memory_limit . '
+        </p>
+        ';
+    }
+
+
+    // --- upload_max_filesize ---
+    if ((int)$upload_max_filesize < 64) {
+        echo '
+        <p class="error">
+            upload_max_filesize کمتر از ۶۴MB است و ممکن است آپلود فایل‌های حجیم با خطا مواجه شود.
+            <br/>
+            upload_max_filesize فعلی : ' . $upload_max_filesize . '
+        </p>
+        کد برای کپی: (php.ini , user.ini)
+        <br/>
+        <code>
+            upload_max_filesize = 64M
+        </code>
+        ';
+    } else {
+        echo '
+        <p class="success">
+            upload_max_filesize فعلی : ' . $upload_max_filesize . '
+        </p>
+        ';
+    }
+
+
+    // --- post_max_size ---
+    if ((int)$post_max_size < 64) {
+        echo '
+        <p class="error">
+            post_max_size کمتر از ۶۴MB است و ممکن است هنگام ارسال داده‌های فرم مشکل ایجاد کند.
+            <br/>
+            post_max_size فعلی : ' . $post_max_size . '
+        </p>
+        کد برای کپی: (php.ini , user.ini)
+        <br/>
+        <code>
+            post_max_size = 64M
+        </code>
+        ';
+    } else {
+        echo '
+        <p class="success">
+            post_max_size فعلی : ' . $post_max_size . '
+        </p>
+        ';
+    }
+
     // end check
 
     $message = '';
@@ -179,9 +302,22 @@ function mobo_core_admin_page()
                         Common Settings : Once Per Minute(* * * * *)
                     </bdi>
                     <br>
+                    <?php 
+                    $php_path = defined( 'TOP_PHP_CLI_PATH' ) && TOP_PHP_CLI_PATH
+                        ? TOP_PHP_CLI_PATH
+                        : ( PHP_BINARY ?: 'php' );
+
+                    $wp_cron_path = trailingslashit( ABSPATH ) . 'wp-cron.php';
+                    $command      = sprintf( '%s %s', $php_path, $wp_cron_path );
+
+                    ?>
                     <code dir="ltr">wget -q -O - <?php echo $site_url; ?>/wp-cron.php?doing_wp_cron >/dev/null 2>&1</code>
                     <br>
                     <code dir="ltr">/usr/local/bin/curl --silent -L "<?php echo $site_url; ?>/wp-cron.php?doing_wp_cron" >/dev/null 2>&1</code>
+                    <br>
+                    <code dir="ltr"><?php echo $command; ?></code>
+                    <br>
+                    <code dir="ltr">/usr/local/bin/php <?php echo $wp_cron_path; ?></code>
                 </p>
 
 

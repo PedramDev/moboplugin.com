@@ -437,30 +437,33 @@ class WooCommerceProductManager
                 $result = $this->get_or_create_product($product_id, $attributes);
                 trace_log();
 
-                $setProdDetailResult = $this->set_product_details($result['product'], $result['isNew'], $product_url, $title, $caption, $price, $comparePrice, $stock, $auto_options, $wp_category_ids, $publishDate);
+                $product = $result['product'];
+
+                $setProdDetailResult = $this->set_product_details($product, $result['isNew'], $product_url, $title, $caption, $price, $comparePrice, $stock, $auto_options, $wp_category_ids, $publishDate);
                 if ($setProdDetailResult == false) {
                     trace_log('save product aborted!');
                     continue;
                 }
                 trace_log();
 
-                $wp_product_id = $result['product']->save();
-                $result['product']->update_meta_data('product_guid', $product_id); // Store GUID
+                $wp_product_id = $product->save();
+                trace_log('error!!! app stoped!');
+                $product->update_meta_data('product_guid', $product_id); // Store GUID
 
                 trace_log();
 
                 if ($result['isNew'] || $auto_options['global_update_images'] == '1') {
-                    $this->handle_images($result['product'], $images);
+                    $this->handle_images($product, $images);
                 }
                 trace_log();
-                $this->update_attributes($result['product'], $attributes, $wp_product_id);
+                $this->update_attributes($product, $attributes, $wp_product_id);
 
-                $result['product']->save();
+                $product->save();
 
-                $this->update_variants($result['product'], $variants, $auto_options, $wp_product_id);
+                $this->update_variants($product, $variants, $auto_options, $wp_product_id);
                 trace_log();
 
-                $result['product']->save();
+                $product->save();
                 trace_log();
             } finally {
                 // Remove the lock file
