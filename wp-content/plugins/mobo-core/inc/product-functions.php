@@ -402,16 +402,26 @@ class WooCommerceProductManager
 
             $product_id = $product_data['productId'];
 
+            $lockTtl   = 300; // 300 seconds (For be poor host!)
             $lockFile = __DIR__ . "/tmp/product_lock_{$product_id}.lock"; // Lock file path
             if (file_exists($lockFile)) {
-                trace_log();
-                return; // Exit if the function is already running
+                 $age = time() - filemtime($lockFile);
+
+                if ($age < $lockTtl) {
+                    trace_log("Active lock for product {$product_id}, age: {$age}s");
+                    return;
+                }
+                
+                // Stale lock → remove it
+                trace_log("Stale lock for product {$product_id}, age: {$age}s — removing");
+                \unlink($lockFile);
             }
 
             // Create a lock file
             $lockCreated = file_put_contents($lockFile, "locked");
             if ($lockCreated == false) {
-                trace_log();
+                trace_log("Failed to create lock file for product {$product_id}");
+                return;
             }
 
 
@@ -438,6 +448,7 @@ class WooCommerceProductManager
                 trace_log();
 
                 $product = $result['product'];
+                $product->update_meta_data('product_guid', $product_id); // Store GUID
 
                 $setProdDetailResult = $this->set_product_details($product, $result['isNew'], $product_url, $title, $caption, $price, $comparePrice, $stock, $auto_options, $wp_category_ids, $publishDate);
                 if ($setProdDetailResult == false) {
@@ -447,8 +458,7 @@ class WooCommerceProductManager
                 trace_log();
 
                 $wp_product_id = $product->save();
-                trace_log('error!!! app stoped!');
-                $product->update_meta_data('product_guid', $product_id); // Store GUID
+                trace_log("product saved : product_guid:{$product_id} , product_id:{$wp_product_id}");
 
                 trace_log();
 
@@ -466,11 +476,17 @@ class WooCommerceProductManager
                 $product->save();
                 trace_log();
             } finally {
+
+                trace_log("Releasing lock for product {$product_id}");
                 // Remove the lock file
+                
                 trace_log();
                 if (file_exists($lockFile))
-                    unlink($lockFile);
-                trace_log();
+                {
+                    \unlink($lockFile);
+                }
+
+                trace_log("Lock released for product {$product_id}");
             }
         }
 
