@@ -408,7 +408,14 @@ class WooCommerceProductManager
 
             if (file_exists($lockFile)) {
                 $age = time() - filemtime($lockFile);
-                $attempts = (int) @file_get_contents($lockFile);
+
+                $content = @file_get_contents($lockFile);
+
+                // Extract digits only
+                $digits = preg_replace('/\D/', '', $content);
+
+                // Convert to integer (fallback to 0 if no digits found)
+                $attempts = $digits !== '' ? (int)$digits : 0;
 
                 // Ensure attempts never becomes negative or absurd
                 if ($attempts < 0) {
