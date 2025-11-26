@@ -117,7 +117,7 @@ function mobo_core_read_webhook_interval()
     // Process the data...
     switch($data['event']){
         case 'ProductUpdated';
-            if('Products updated successfully' == $productFunc->webhook_update_product($data)){
+            if('Products updated successfully' == $productFunc->webhook_update_product($data,$firstFile)){
                 $do_unlink = true;
             }
             break;

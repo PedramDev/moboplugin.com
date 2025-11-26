@@ -376,16 +376,16 @@ class WooCommerceProductManager
     //174789827 multi attr
     public function update_product($data)
     {
-        return $this->process_product_data($data);
+        return $this->process_product_data($data, null);
     }
 
-    public function webhook_update_product($data)
+    public function webhook_update_product($data, $filePath)
     {
-        return $this->process_product_data($data);
+        return $this->process_product_data($data, $filePath);
     }
 
     //fix
-    private function process_product_data($data)
+    private function process_product_data($data, $filePath)
     {
         trace_log();
         if (!$data) {
@@ -404,24 +404,49 @@ class WooCommerceProductManager
 
             $lockTtl   = 300; // 300 seconds (For be poor host!)
             $lockFile = __DIR__ . "/tmp/product_lock_{$product_id}.lock"; // Lock file path
+            $maxAttempts = 2;
+
             if (file_exists($lockFile)) {
-                 $age = time() - filemtime($lockFile);
+                $age = time() - filemtime($lockFile);
+                $attempts = (int) @file_get_contents($lockFile);
+
+                // Ensure attempts never becomes negative or absurd
+                if ($attempts < 0) {
+                    $attempts = 0;
+                }
 
                 if ($age < $lockTtl) {
-                    trace_log("Active lock for product {$product_id}, age: {$age}s");
-                    return;
+                    $attempts++;
+                    file_put_contents($lockFile, $attempts);
+
+                    if ($attempts > $maxAttempts) {
+                        trace_log("Exceeded attempt limit for {$product_id}, attempts={$attempts} — removing lock");
+                        unlink($lockFile);
+                        if (unlink($filePath)) {
+                            trace_log();
+                            trace_log('webhook unlinked.');
+                        } else {
+                            trace_log();
+                            trace_log("error on webhook unlinked. `$filePath`");
+                        }
+                    } else {
+                        trace_log("Active lock for {$product_id}, attempt {$attempts}, age: {$age}s");
+                        return;
+                    }
+                } else {
+                    // Stale lock → remove it
+                    trace_log("Stale lock for product {$product_id}, age: {$age}s — removing");
+                    \unlink($lockFile);
                 }
-                
-                // Stale lock → remove it
-                trace_log("Stale lock for product {$product_id}, age: {$age}s — removing");
-                \unlink($lockFile);
             }
 
             // Create a lock file
-            $lockCreated = file_put_contents($lockFile, "locked");
+            $lockCreated = file_put_contents($lockFile, "1");
             if ($lockCreated == false) {
                 trace_log("Failed to create lock file for product {$product_id}");
                 return;
+            } else {
+                trace_log("Created new lock for {$product_id}");
             }
 
 
@@ -479,10 +504,9 @@ class WooCommerceProductManager
 
                 trace_log("Releasing lock for product {$product_id}");
                 // Remove the lock file
-                
+
                 trace_log();
-                if (file_exists($lockFile))
-                {
+                if (file_exists($lockFile)) {
                     \unlink($lockFile);
                 }
 
