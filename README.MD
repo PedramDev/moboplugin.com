@@ -9,21 +9,28 @@ It supports scheduled syncing, real-time webhooks, manual resync controls, and a
 
 Full documentation is located in the `/docs` directory.
 
-### 1. FUNCTIONS.md
+
+### 1. README.MD
+Full documentation
+
+Link: [./docs/README.MD](./docs/README.MD)
+
+
+### 2. FUNCTIONS.MD
 Detailed reference for every function, class, and subsystem in the plugin.
 
-Link: ./docs/FUNCTIONS.md
+Link: [./docs/FUNCTIONS.MD](./docs/FUNCTIONS.MD)
 
 ---
 
-### 2. DIAGRAMS.md
+### 3. DIAGRAMS.MD
 Visual architecture diagrams using Mermaid, including:
 
 - System architecture
 - Product processing pipeline
 - Webhook queue flow
 
-Link: ./docs/DIAGRAMS.md
+Link: [./docs/DIAGRAMS.MD](./docs/DIAGRAMS.MD)
 
 ---
 ## Features
@@ -39,6 +46,7 @@ Link: ./docs/DIAGRAMS.md
 
 ---
 
+```markdown
 ## Folder Structure
 
 mobo-core/
@@ -56,6 +64,7 @@ mobo-core/
     ├── README.md
     ├── FUNCTIONS.md
     └── DIAGRAMS.md
+```
 
 ---
 ## System Overview
