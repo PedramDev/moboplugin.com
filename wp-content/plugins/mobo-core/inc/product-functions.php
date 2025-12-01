@@ -888,6 +888,21 @@ class WooCommerceProductManager
         $product->set_attributes($attribute_data);
     }
 
+    private function cleanup_old_variants($product, $variants)
+    {
+        $current_guids = array_column($variants, 'variantId');
+
+        foreach ($product->get_children() as $variation_id) {
+            $guid = get_post_meta($variation_id, 'variant_guid', true);
+
+            // If this variation has a guid but it's not in current feed → delete it
+            if ($guid && !in_array($guid, $current_guids, true)) {
+                trace_log("Deleting old variation {$variation_id} with guid {$guid}");
+                \wp_delete_post($variation_id, true);
+            }
+        }
+    }
+
     private function update_variants($product, $variants, $auto_options, $wp_product_id)
     {
         trace_log();
@@ -899,6 +914,9 @@ class WooCommerceProductManager
             $this->set_variant_details($existing_variant_id, $variation, $variant, $auto_options);
             $variation->save();
         }
+
+        // clean up variations not in JSON anymore
+        $this->cleanup_old_variants($product, $variants);
     }
 
     private function get_existing_variant_id($product, $variant_guid)

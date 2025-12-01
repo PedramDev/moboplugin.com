@@ -130,3 +130,43 @@ function mobo_isLicenseExpired()
         return false;
     }
 }
+
+
+#region DEBUG
+add_action('woocommerce_before_single_product', function () {
+    if ( ! is_product() ) {
+        return;
+    }
+
+    global $product;
+
+    if ( ! $product instanceof \WC_Product_Variable ) {
+        return;
+    }
+
+    if ( $product->get_meta('product_guid') !== 'd6578ffc-21c9-4afa-aee8-7f4f624d5b98' ) {
+        // Only debug this specific product
+        return;
+    }
+
+    trace_log('=== VARIATION DEBUG START ===');
+    foreach ( $product->get_children() as $child_id ) {
+        $v = wc_get_product($child_id);
+        trace_log(wc_print_r([
+            'id'             => $child_id,
+            'variant_guid'   => get_post_meta($child_id, 'variant_guid', true),
+            'attrs'          => $v->get_attributes(),
+            'regular_price'  => $v->get_regular_price(),
+            'sale_price'     => $v->get_sale_price(),
+            'price'          => $v->get_price(),
+            'manage_stock'   => $v->get_manage_stock(),
+            'stock_qty'      => $v->get_stock_quantity(),
+            'stock_status'   => $v->get_stock_status(),
+            'is_in_stock'    => $v->is_in_stock(),
+            'is_purchasable' => $v->is_purchasable(),
+        ], true));
+    }
+    trace_log('=== VARIATION DEBUG END ===');
+});
+
+#endregion
