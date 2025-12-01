@@ -649,7 +649,10 @@ class WooCommerceProductManager
         }
 
         $dt = $this->parse_published_date($publishedAt);
-        
+
+        trace_log('dt : ' . ($dt ?: 'null'));
+        trace_log('publishedAt : ' . $publishedAt);
+
         if ($isNew) {
             if ($dt) {
                 $product->set_date_created($dt);
@@ -687,19 +690,21 @@ class WooCommerceProductManager
         foreach ($formats as $format) {
             $dt = \DateTime::createFromFormat($format, $publishedAt);
             if ($dt instanceof \DateTime) {
-                return $dt;
+                // normalize to MySQL datetime string
+                return $dt->format('Y-m-d H:i:s');
             }
         }
 
         // Last-chance: let strtotime guess
         $timestamp = strtotime($publishedAt);
-        trace_log("timestamp : $timestamp");
-        trace_log("publishedAt : $publishedAt");
 
         if ($timestamp !== false) {
             $dt = new \DateTime('@' . $timestamp);
-            $dt->setTimezone(wp_timezone()); // respect WP timezone
-            return $dt;
+            // use site timezone if you want
+            if (function_exists('wp_timezone')) {
+                $dt->setTimezone(wp_timezone());
+            }
+            return $dt->format('Y-m-d H:i:s');
         }
 
         return null;
