@@ -648,25 +648,59 @@ class WooCommerceProductManager
             }
         }
 
+        $dt = $this->parse_published_date($publishedAt);
+        
         if ($isNew) {
-            if (isset($publishedAt) && !empty($publishedAt)) {
-                $date_time = \DateTime::createFromFormat('m/d/Y H:i:s', $publishedAt);
-                $product->set_date_created($date_time);
+            if ($dt) {
+                $product->set_date_created($dt);
             } else {
                 $product->set_date_created(current_time('mysql'));
             }
         } else {
-            if (isset($publishedAt) && !empty($publishedAt)) {
-                $date_time = \DateTime::createFromFormat('m/d/Y H:i:s', $publishedAt);
-                $product->set_date_modified($date_time);
+            if ($dt) {
+                $product->set_date_modified($dt);
+                $product->set_date_created($dt);
             } else {
                 $product->set_date_modified(current_time('mysql'));
+                $product->set_date_created(current_time('mysql'));
             }
         }
 
         return true;
     }
 
+    private function parse_published_date($publishedAt)
+    {
+        if (empty($publishedAt)) {
+            return null;
+        }
+
+        $publishedAt = trim($publishedAt);
+
+        $formats = [
+            'm/d/Y H:i:s',         // old style: 11/30/2025 09:57:00
+            'Y-m-d\TH:i:s\Z',      // 2025-11-30T09:57:00Z
+            \DateTime::ATOM,       // 2025-11-30T09:57:00+00:00
+            \DateTime::RFC3339,    // etc
+        ];
+
+        foreach ($formats as $format) {
+            $dt = \DateTime::createFromFormat($format, $publishedAt);
+            if ($dt instanceof \DateTime) {
+                return $dt;
+            }
+        }
+
+        // Last-chance: let strtotime guess
+        $timestamp = strtotime($publishedAt);
+        if ($timestamp !== false) {
+            $dt = new \DateTime('@' . $timestamp);
+            $dt->setTimezone(wp_timezone()); // respect WP timezone
+            return $dt;
+        }
+
+        return null;
+    }
 
     private function set_conditional_price_without_compare_price($product, $price, $comparePrice,  $auto_options)
     {
