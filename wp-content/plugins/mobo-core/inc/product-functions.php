@@ -543,7 +543,7 @@ class WooCommerceProductManager
     private function get_or_create_product($product_id, $attributes)
     {
         $result = ['isNew' => false, 'product' => null];
-        $args = [
+        $existing_products = \get_posts([
             'post_type' => 'product',
             'meta_query' => [
                 [
@@ -554,7 +554,8 @@ class WooCommerceProductManager
             ],
             'posts_per_page' => 1,
             'fields'         => 'ids',
-        ];
+        ]);
+        
         $has_attributes = !empty($attributes);
         if (!empty($existing_products)) {
             $product_id = $existing_products[0];
@@ -619,13 +620,22 @@ class WooCommerceProductManager
             $this->set_prices($product, $price, $comparePrice, $auto_options);
         }
 
-        if ($isNew || $auto_options['global_product_auto_stock'] == '1') {
-            if ($isNew && $auto_options['mobo_core_only_in_stock'] == '1' && $stock === 0) {
-                return false;
+        $is_variable = $product instanceof \WC_Product_Variable;
+
+        if ($is_variable) {
+            // Let variations control inventory, parent just needs to look "ok"
+            $product->set_manage_stock(false);
+            $product->set_stock_quantity(null);
+            $product->set_stock_status('instock');
+        } else {
+            if ($isNew || $auto_options['global_product_auto_stock'] == '1') {
+                if ($isNew && $auto_options['mobo_core_only_in_stock'] == '1' && $stock === 0) {
+                    return false;
+                }
+                $product->set_manage_stock(true);
+                $product->set_stock_quantity($stock === null ? 9999 : $stock);
+                $product->set_stock_status(($stock > 0 || $stock === null) ? 'instock' : 'outofstock');
             }
-            $product->set_manage_stock(true);
-            $product->set_stock_quantity($stock === null ? 9999 : $stock);
-            $product->set_stock_status(($stock > 0 || $stock === null) ? 'instock' : 'outofstock');
         }
 
         if ($isNew || $auto_options['global_update_categories'] == '1') {
@@ -925,11 +935,15 @@ class WooCommerceProductManager
         trace_log();
 
         trace_log(print_r($variant, true));
+        $attrs = [];
+
         foreach ($variant['attributes'] as $attribute) {
             $key = 'attribute_' . \sanitize_title($attribute['name']);
             trace_log("Updating $key with " . $attribute['option']);
+            $attrs[$key] = $attribute['option'];
             $variation->update_meta_data($key, $attribute['option']);
         }
+        $variation->set_attributes($attrs);
         $variation->update_meta_data('variant_guid', $variant['variantId']);
     }
 
