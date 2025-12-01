@@ -693,6 +693,9 @@ class WooCommerceProductManager
 
         // Last-chance: let strtotime guess
         $timestamp = strtotime($publishedAt);
+        trace_log("timestamp : $timestamp");
+        trace_log("publishedAt : $publishedAt");
+
         if ($timestamp !== false) {
             $dt = new \DateTime('@' . $timestamp);
             $dt->setTimezone(wp_timezone()); // respect WP timezone
