@@ -522,36 +522,10 @@ class WooCommerceProductManager
         }
 
         #region fix options fat
-        global $wpdb;
-        $table_prefix = $wpdb->prefix;  // Get the table prefix
 
         // Prepare the query with a placeholder
-        $wpdb->query(
-            $wpdb->prepare(
-                "DELETE FROM {$table_prefix}options WHERE option_name LIKE %s",
-                '_transient_%'
-            )
-        );
-
-        $wpdb->query(
-            $wpdb->prepare(
-                "DELETE FROM {$table_prefix}options WHERE option_name LIKE %s",
-                '_transient_timeout_%'
-            )
-        );
-
-        // Optimize the table
-        $wpdb->query(
-            "OPTIMIZE TABLE {$table_prefix}options"
-        );
-
-        $wpdb->query(
-            "OPTIMIZE TABLE {$table_prefix}posts"
-        );
-
-        $wpdb->query(
-            "OPTIMIZE TABLE {$table_prefix}postmeta"
-        );
+        \wc_delete_product_transients($wp_product_id);
+        \clean_post_cache($wp_product_id);
         #endregion
 
 
@@ -579,16 +553,44 @@ class WooCommerceProductManager
                 ]
             ],
             'posts_per_page' => 1,
+            'fields'         => 'ids',
         ];
-
-
-        $existing_products = \get_posts($args);
+        $has_attributes = !empty($attributes);
         if (!empty($existing_products)) {
-            $result['product'] = \wc_get_product($existing_products[0]->ID);
-            $result['isNew'] = false;
+            $product_id = $existing_products[0];
+            $product    = \wc_get_product($product_id);
+
+            if (!$product) {
+                // Safety fallback: recreate if somehow broken
+                $result['isNew']  = true;
+                $result['product'] = $has_attributes
+                    ? new \WC_Product_Variable()
+                    : new \WC_Product();
+                return $result;
+            }
+
+            $current_type = $product->get_type();
+
+            // 👉 Convert SIMPLE → VARIABLE when attributes exist
+            if ($has_attributes && $current_type !== 'variable') {
+                \wp_set_object_terms($product_id, 'variable', 'product_type', false);
+                $product = new \WC_Product_Variable($product_id);
+            }
+
+            // (Optional) Convert VARIABLE → SIMPLE when attributes removed
+            if (!$has_attributes && $current_type !== 'simple') {
+                \wp_set_object_terms($product_id, 'simple', 'product_type', false);
+                $product = new \WC_Product($product_id);
+            }
+
+            $result['product'] = $product;
+            $result['isNew']   = false;
+
         } else {
-            $result['isNew'] = true;
-            $result['product'] = !empty($attributes) ? new \WC_Product_Variable() : new \WC_Product();
+            $result['isNew']   = true;
+            $result['product'] = $has_attributes
+                ? new \WC_Product_Variable()
+                : new \WC_Product();
         }
 
         return $result;
@@ -935,8 +937,9 @@ class WooCommerceProductManager
     {
         $auto_compare = $auto_options['global_product_auto_compare_price'];
 
+        $comparePrice = $variant['comparePrice'] ?? null;
+        
         $price = $variant['price'];
-
         $newPrice = $variant['price'];
 
         if (isset($variant['comparePrice']) && $variant['comparePrice'] != null) {
