@@ -555,7 +555,7 @@ class WooCommerceProductManager
             'posts_per_page' => 1,
             'fields'         => 'ids',
         ]);
-        
+
         $has_attributes = !empty($attributes);
         if (!empty($existing_products)) {
             $product_id = $existing_products[0];
@@ -586,7 +586,6 @@ class WooCommerceProductManager
 
             $result['product'] = $product;
             $result['isNew']   = false;
-
         } else {
             $result['isNew']   = true;
             $result['product'] = $has_attributes
@@ -764,35 +763,84 @@ class WooCommerceProductManager
         $static_percentage = floatval('1.' . $auto_options['global_additional_percentage']);
         $static_price = intval($auto_options['global_additional_price']);
         $dynamic_condition = json_decode($auto_options['mobo_dynamic_price'], true);
+        $auto_compare = $auto_options['global_product_auto_compare_price'];
 
         $price_type = $auto_options['mobo_price_type'];
+
+        $newPrice = $product['price'];
+
+        if (isset($product['comparePrice']) && $product['comparePrice'] != null) {
+            $newPrice = $product['comparePrice'];
+        }
 
         switch ($price_type) {
             case 'static-price':
 
-                $product->set_regular_price(intval($comparePrice) + $static_price);
-                $product->set_sale_price(intval($price) + $static_price);
+                if (isset($comparePrice) && $auto_compare == '1') {
+                    $product->set_regular_price(intval($comparePrice) + $static_price);
+                    $product->set_sale_price(intval($price) + $static_price);
+                } else {
+                    $product->set_regular_price(intval($newPrice) + $static_price);
+                    $product->set_sale_price('');
+                }
 
                 break;
             case 'static-percentage':
 
-                $product->set_regular_price(intval($comparePrice) * $static_percentage);
-                $product->set_sale_price(intval($price) * $static_percentage);
+                if (isset($comparePrice) && $auto_compare == '1') {
+                    $product->set_regular_price(intval($comparePrice) * $static_percentage);
+                    $product->set_sale_price($price * $static_percentage);
+                } else {
+                    $product->set_regular_price(intval($newPrice) * $static_percentage);
+                    $product->set_sale_price('');
+                }
 
                 break;
             case 'dynamic-price':
 
-                foreach ($dynamic_condition as $condition) {
-                    if ($condition['is_active'] == 'true' && $price >= intval($condition['low']) && $price <= intval($condition['high'])) {
-                        if ($condition['benefit_type'] == 'static') {
-                            $product->set_regular_price(intval($comparePrice) + intval($condition['benefit']));
-                            $product->set_sale_price(intval($price) + intval($condition['benefit']));
-                        } else {
-                            $product->set_regular_price(intval($comparePrice) * floatval('1.' . $condition['benefit']));
-                            $product->set_sale_price(intval($price) *  floatval('1.' . $condition['benefit']));
+                trace_log('apply_dynamic_pricing(): start - price=' . $price . ', comparePrice=' . $comparePrice);
+
+                    foreach ($dynamic_condition as $index => $condition) {
+
+                        trace_log('apply_dynamic_pricing(): checking condition index=' . $index . ' - ' . print_r($condition, true));
+
+                        if (
+                            $condition['is_active'] == 'true'
+                            && $price >= intval($condition['low'])
+                            && $price <= intval($condition['high'])
+                        ) {
+
+                            trace_log('apply_dynamic_pricing(): condition matched index=' . $index);
+
+                            if ($condition['benefit_type'] == 'static') {
+
+                                $new_regular = intval($comparePrice) + intval($condition['benefit']);
+                                $new_sale    = intval($price) + intval($condition['benefit']);
+
+                                trace_log('apply_dynamic_pricing(): static benefit applied - regular=' . $new_regular . ', sale=' . $new_sale);
+
+                                $product->set_regular_price($new_regular);
+                                $product->set_sale_price($new_sale);
+                            } else {
+
+                                $multiplier  = floatval('1.' . $condition['benefit']);
+                                $new_regular = intval($comparePrice) * $multiplier;
+                                $new_sale    = intval($price) * $multiplier;
+
+                                trace_log('apply_dynamic_pricing(): percentage benefit applied - multiplier=' . $multiplier . ', regular=' . $new_regular . ', sale=' . $new_sale);
+
+                                $product->set_regular_price($new_regular);
+                                $product->set_sale_price($new_sale);
+                            }
+
+                            trace_log('apply_dynamic_pricing(): prices on product now - regular=' . $product->get_regular_price() . ', sale=' . $product->get_sale_price());
+                            // assuming only first matching condition should apply:
+                            break;
                         }
                     }
-                }
+
+                    trace_log('apply_dynamic_pricing(): end');
+                    break;
 
                 break;
             default:
@@ -1012,7 +1060,7 @@ class WooCommerceProductManager
         $auto_compare = $auto_options['global_product_auto_compare_price'];
 
         $comparePrice = $variant['comparePrice'] ?? null;
-        
+
         $price = $variant['price'];
         $newPrice = $variant['price'];
 
@@ -1045,7 +1093,7 @@ class WooCommerceProductManager
 
                     if (isset($comparePrice) && $auto_compare == '1') {
                         $variation->set_regular_price(intval($comparePrice) + $static_price);
-                        $variation->set_sale_price($price);
+                        $variation->set_sale_price(intval($price) + $static_price);
                     } else {
                         $variation->set_regular_price(intval($newPrice) + $static_price);
                         $variation->set_sale_price('');
@@ -1056,7 +1104,7 @@ class WooCommerceProductManager
 
                     if (isset($comparePrice) && $auto_compare == '1') {
                         $variation->set_regular_price(intval($comparePrice) * $static_percentage);
-                        $variation->set_sale_price($price);
+                        $variation->set_sale_price($price * $static_percentage);
                     } else {
                         $variation->set_regular_price(intval($newPrice) * $static_percentage);
                         $variation->set_sale_price('');
@@ -1065,31 +1113,48 @@ class WooCommerceProductManager
                     break;
                 case 'dynamic-price':
 
-                    foreach ($dynamic_condition as $condition) {
-                        if ($condition['is_active'] == 'true' && $price >= intval($condition['low']) && $price <= intval($condition['high'])) {
+                    trace_log('apply_dynamic_pricing(): start - price=' . $price . ', comparePrice=' . $comparePrice);
+
+                    foreach ($dynamic_condition as $index => $condition) {
+
+                        trace_log('apply_dynamic_pricing(): checking condition index=' . $index . ' - ' . print_r($condition, true));
+
+                        if (
+                            $condition['is_active'] == 'true'
+                            && $price >= intval($condition['low'])
+                            && $price <= intval($condition['high'])
+                        ) {
+
+                            trace_log('apply_dynamic_pricing(): condition matched index=' . $index);
+
                             if ($condition['benefit_type'] == 'static') {
 
-                                if (isset($comparePrice) && $auto_compare == '1') {
-                                    $variation->set_regular_price(intval($comparePrice) + intval($condition['benefit']));
-                                    $variation->set_sale_price($price);
-                                } else {
-                                    $variation->set_regular_price(intval($newPrice) + intval($condition['benefit']));
-                                    $variation->set_sale_price('');
-                                }
+                                $new_regular = intval($comparePrice) + intval($condition['benefit']);
+                                $new_sale    = intval($price) + intval($condition['benefit']);
+
+                                trace_log('apply_dynamic_pricing(): static benefit applied - regular=' . $new_regular . ', sale=' . $new_sale);
+
+                                $variation->set_regular_price($new_regular);
+                                $variation->set_sale_price($new_sale);
                             } else {
 
-                                if (isset($comparePrice) && $auto_compare == '1') {
+                                $multiplier  = floatval('1.' . $condition['benefit']);
+                                $new_regular = intval($comparePrice) * $multiplier;
+                                $new_sale    = intval($price) * $multiplier;
 
-                                    $variation->set_regular_price(intval($comparePrice) *  floatval('1.' . $condition['benefit']));
-                                    $variation->set_sale_price($price);
-                                } else {
+                                trace_log('apply_dynamic_pricing(): percentage benefit applied - multiplier=' . $multiplier . ', regular=' . $new_regular . ', sale=' . $new_sale);
 
-                                    $variation->set_regular_price(intval($newPrice) *  floatval('1.' . $condition['benefit']));
-                                    $variation->set_sale_price('');
-                                }
+                                $variation->set_regular_price($new_regular);
+                                $variation->set_sale_price($new_sale);
                             }
+
+                            trace_log('apply_dynamic_pricing(): prices on variation now - regular=' . $variation->get_regular_price() . ', sale=' . $variation->get_sale_price());
+                            // assuming only first matching condition should apply:
+                            break;
                         }
                     }
+
+                    trace_log('apply_dynamic_pricing(): end');
                     break;
             }
         }
