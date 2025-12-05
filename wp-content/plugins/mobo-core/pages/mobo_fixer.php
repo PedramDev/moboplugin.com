@@ -583,7 +583,7 @@ function mobo_core_fixer_page()
 
         <br>
         <br>
-        <a href="<?php echo admin_url('admin-post.php?action=mobo_core_removeAllProducts'); ?>">حذف همه ی محصولات</a>
+        <!-- <a href="<?php echo admin_url('admin-post.php?action=mobo_core_removeAllProducts'); ?>">حذف همه ی محصولات</a>
         <br>
         <p>
             بعد از حذف محصولات :
@@ -595,7 +595,7 @@ function mobo_core_fixer_page()
             Regenerate product lookup tables
             <br>
             Optionally, Recount terms
-        </p>
+        </p> -->
         <br>
     </div>
 
